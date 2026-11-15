@@ -82,7 +82,6 @@ Nenhum emulador ou jogo está neste repositório. Os emuladores são instalados 
 - **Cabo USB no PC** não funciona na porta mini USB (ela aparece como adaptador serial). Use o pen drive na porta de cima ou a página na porta 8080.
 - **Final Fight** (versão EUA de 1990) não roda no FB Alpha 2012: o núcleo só aceita outras revisões do jogo.
 - **Pela placa ficam de fora:** Wi-Fi, Bluetooth, pasta na rede do Windows, SSH, brilho, modo desktop, instalar, atualizar sozinho, jogos grátis e conquistas (o Android 2.3 não abre os sites atuais em HTTPS). PSP, Saturn, Dreamcast e Nintendo DS são pesados demais para 1 núcleo a 1 GHz.
-- **Ainda por fazer:** perfis com avatar ("Quem vai jogar?"), tema com imagem sua e idioma.
 
 ## Aparelho
 
