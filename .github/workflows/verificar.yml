@@ -1,0 +1,31 @@
+# Conferencia rapida a cada push: o menu (Java) compila, os scripts de arte rodam no Python, versao e CHANGELOG.
+# O APK assinado e o driver joyd (Zig, ARM) sao gerados no Windows de quem publica (launcher\build.ps1, joypad\build.ps1).
+name: verificar
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+
+jobs:
+  verificar:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Versao (SemVer) e CHANGELOG
+        run: |
+          v=$(sed -n 's/.*android:versionName="\([^"]*\)".*/\1/p' launcher/AndroidManifest.xml)
+          echo "$v" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$' || { echo "::error::versionName '$v' nao e SemVer"; exit 1; }
+          grep -q '^## \[Unreleased\]' CHANGELOG.md || { echo "::error file=CHANGELOG.md::falta a secao [Unreleased]"; exit 1; }
+          grep -q "^## \[$v\]" CHANGELOG.md || { echo "::error file=CHANGELOG.md::falta a secao [$v]"; exit 1; }
+
+      - name: O menu (Java) compila
+        run: |
+          J=$(ls -d "$ANDROID_HOME"/platforms/android-* | sort -V | tail -1)/android.jar
+          echo "android.jar: $J"
+          mkdir -p classes
+          javac -encoding UTF-8 -source 8 -target 8 -nowarn -bootclasspath "$J" -cp "$J" -d classes \
+            $(find launcher/src -name '*.java')
+
+      - name: Scripts de arte (Python)
+        run: python3 -m py_compile art_src/*.py art_src/kernel/*.py

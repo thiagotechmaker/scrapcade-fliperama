@@ -1,0 +1,31 @@
+name: Problema no ScrapCade do iChroma
+description: Menu, controle, jogo que não abre ou instalação
+labels: [problema]
+body:
+  - type: input
+    id: versao
+    attributes:
+      label: Versão do ScrapCade
+      description: Aparece em Sistema > Informações ("menu: ScrapCade ...")
+      placeholder: 0.3.1-beta
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Onde é o problema
+      options: ["Menu", "Controle (joyd)", "Jogo não abre ou fica lento", "Instalação (INSTALACAO.md)", "Outro"]
+    validations:
+      required: true
+  - type: textarea
+    id: oque
+    attributes:
+      label: O que aconteceu
+      description: O que você fez, o que esperava e o que apareceu. Uma foto da tela ajuda.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Registros (opcional)
+      description: "Controle: /data/local/tmp/joyd.log. Jogo: adb logcat -d -s RetroArch:*. Nunca envie dados de pacientes."
