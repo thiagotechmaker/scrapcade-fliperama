@@ -18,7 +18,11 @@ O aparelho tem duas partes:
 - **ScrapCade, o menu.** É um app Android próprio (`com.thiago.launcher`), configurado como tela inicial. Dá para atualizar ou desinstalar sem mexer no sistema.
 - **Mudanças no sistema do aparelho:** driver do controle (`joyd`, em C, iniciado no boot); logo do ScrapCade OS gravada no bootloader, no kernel e na animação de boot; biblioteca de áudio muda (a original trava o aparelho); boot mais rápido (apps de sistema pré-compilados); ADB pela rede, para manutenção.
 
+**Animações:** no boot, as letras da logo acendem uma a uma e uma barra de blocos corre até o sistema subir; depois, o "CARREGANDO" animado na abertura do menu e ao abrir cada jogo (com o atalho para voltar).
+
 <p align="center"><img src="art_src/scrapcade/previa_boot.gif" width="400" alt="Animação de boot: as letras acendem e a barra de blocos corre"></p>
+
+<p align="center"><img src="capturas/abertura.png" width="49%" alt="Abertura do menu com o CARREGANDO"> <img src="capturas/abrindo_jogo.png" width="49%" alt="CARREGANDO ao abrir um jogo"></p>
 
 **Menu:** carrossel de capas no formato de cada caixa, com filtros por console, **Continuar jogando**, favoritos, mais jogados e os dados de cada jogo. Perfis com a tela "Quem vai jogar?", cada um com favoritos, preferências e saves próprios.
 
