@@ -2,6 +2,8 @@
 
 Todas as mudanças importantes do ScrapCade no iChroma ficam aqui. O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e as versões seguem o [Versionamento Semântico](https://semver.org/lang/pt-BR/) (fase beta enquanto for `0.x`).
 
+As versões 0.1.0-beta e 0.2.0-beta foram instaladas só no aparelho, sem Release no GitHub; as Releases começam na 0.3.0-beta.
+
 ## [Unreleased]
 
 ## [0.3.1-beta] - 2026-11-15

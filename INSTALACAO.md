@@ -6,7 +6,7 @@ Este tutorial mostra como montar o ScrapCade num iChroma II (ou aparelho parecid
 ## Antes de começar
 
 - **Use só aparelho sem dados de paciente.** Apague qualquer dado clínico antes, e faça cópia da memória interna se for mexer no sistema.
-- Você precisa de: computador com Windows, cabo USB, cartão microSD, rede Wi-Fi ou cabo de rede, e acesso root no aparelho.
+- Você precisa de: computador com Windows, cartão microSD, cabo de rede (o Wi-Fi da placa não funciona, e o cabo mini USB aparece no PC só como adaptador serial) e acesso root no aparelho.
 - Os emuladores e os jogos **não vêm neste repositório**. Você precisa instalá-los e ter os jogos de sua propriedade. Veja a seção "Emuladores" abaixo.
 
 ## 1. Ferramentas no computador
@@ -57,9 +57,12 @@ Crie no cartão (com o menu aberto no aparelho ou pelo adb):
 ```
 roms/            biblioteca, dividida por console pelo próprio menu
 Jogos novos/     entrada: copie os jogos aqui
+saves/           saves dos jogos (cada perfil extra fica em saves/perfil-N)
+bios/            BIOS dos consoles, se você tiver as do seu console
+themes/          imagens para usar de fundo do menu
 ```
 
-O menu cria as pastas de console (`psx`, `gba`, `n64`, `megadrive` e assim por diante) sozinho quando você copia os jogos.
+São as mesmas pastas do ScrapCade OS. O menu cria as pastas de console (`psx`, `gba`, `n64`, `megadrive`, `arcade` e assim por diante) sozinho quando você copia os jogos.
 
 ## 6. Emuladores
 
