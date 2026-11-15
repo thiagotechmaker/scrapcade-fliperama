@@ -395,7 +395,7 @@ final class Organizer {
             z.close();
         }
         if (asIs != null) {
-            File d = new File(Catalog.romsDir(), "arcade/roms");
+            File d = new File(Catalog.romsDir(), "arcade");
             d.mkdirs();
             File to = new File(d, asIs + ".zip");
             if (to.exists() && !to.delete()) throw new IOException("ja existe");
@@ -561,7 +561,7 @@ final class Organizer {
             }
             if (target == null) return null;
         }
-        File dir = new File(Catalog.romsDir(), "arcade/roms");
+        File dir = new File(Catalog.romsDir(), "arcade");
         dir.mkdirs();
         write(z, out, new File(dir, target + ".zip"));
         // Alguns zips novos trazem a BIOS de Neo Geo junto, que os jogos de Neo Geo pedem

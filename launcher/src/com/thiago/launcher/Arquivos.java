@@ -24,7 +24,7 @@ import java.util.Map;
  */
 final class Arquivos {
     private static final String USB = "Pen drive";
-    private static final String[] ROOTS = {"roms", "Jogos novos", "xash", USB};
+    private static final String[] ROOTS = {"roms", "Jogos novos", "saves", "bios", "xash", USB};
 
     /** Bytes ja copiados pela operacao em andamento, para a tela mostrar o progresso. */
     static volatile long progress;
@@ -150,7 +150,7 @@ final class Arquivos {
         return b.append(']').toString();
     }
 
-    private static void copy(File a, File b) throws IOException {
+    static void copy(File a, File b) throws IOException {
         if (a.isDirectory()) {
             if (!b.mkdirs() && !b.isDirectory()) throw new IOException("nao criou " + b);
             File[] fs = a.listFiles();

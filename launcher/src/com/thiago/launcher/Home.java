@@ -36,6 +36,8 @@ import android.widget.Toast;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.io.File;
+import android.os.Environment;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -87,6 +89,11 @@ public class Home extends Activity implements CarouselApi.Listener {
 
     private int dp(float v) { return (int) (v * u + 0.5f); }
 
+    private float escalaFonte() {
+        int f = prefs == null ? 0 : Math.max(0, Math.min(2, prefs.getInt("fonte", 0)));
+        return f == 2 ? 1.3f : f == 1 ? 1.15f : 1f;
+    }
+
     @Override
     public void onCreate(Bundle b) {
         super.onCreate(b);
@@ -95,6 +102,7 @@ public class Home extends Activity implements CarouselApi.Listener {
         u = Carousel.unit(this);
         pm = getPackageManager();
         prefs = getSharedPreferences("fliperama", MODE_PRIVATE);
+        escala = escalaFonte();
         Theme.ctx = getApplicationContext();
         if (!prefs.getBoolean("aurora_v1", false))       // o visual novo vale para quem ja tinha outro tema salvo
             prefs.edit().putInt("theme", Theme.AURORA).putBoolean("aurora_v1", true).commit();
@@ -142,6 +150,7 @@ public class Home extends Activity implements CarouselApi.Listener {
         root.addView(files.view(), new FrameLayout.LayoutParams(fp, fp));
         root.addView(buildOptions(), new FrameLayout.LayoutParams(fp, fp));
         root.addView(buildInfo(), new FrameLayout.LayoutParams(fp, fp));
+        root.addView(buildProtecao(), new FrameLayout.LayoutParams(fp, fp));
         splash(root);
         setContentView(root);
         carousel.setAnimMs(prefs.getBoolean("fast", false) ? 130 : 200);
@@ -349,32 +358,40 @@ public class Home extends Activity implements CarouselApi.Listener {
 
     // ------------------------------------------------------------ favoritos, mais jogados e detalhes
 
-    private static final String F_ALL = "", F_FAV = "*fav", F_TOP = "*top";
+    private static final String F_ALL = "", F_FAV = "*fav", F_TOP = "*top", F_REC = "*rec";
     private List<String> filters = new ArrayList<String>();
 
     private boolean isFav(Catalog.Game g) { return prefs.getBoolean("fav|" + g.key(), false); }
 
     private int plays(Catalog.Game g) { return prefs.getInt("plays|" + g.key(), 0); }
 
+    private long when(Catalog.Game g) { return prefs.getLong("when|" + g.key(), 0); }
+
     /** Filtros que tem jogo agora: Todos, Favoritos, Mais jogados e cada console. */
     private List<String> buildFilters() {
         List<String> l = new ArrayList<String>();
         l.add(F_ALL);
-        boolean fav = false, top = false;
+        boolean fav = false, top = false, rec = false;
         for (Catalog.Game g : games) {
             if (!fav && isFav(g)) fav = true;
             if (!top && plays(g) > 0) top = true;
+            if (!rec && when(g) > 0) rec = true;
         }
+        if (rec) l.add(F_REC);   // logo depois de Todos: os ultimos jogos abertos
         if (fav) l.add(F_FAV);
         if (top) l.add(F_TOP);
         for (Catalog.Sys s : systems) l.add(s.id);
+        if (prefs.getBoolean("vazios", false))   // painel: mostrar tambem os consoles sem jogo
+            for (Catalog.Sys s : Catalog.all()) if (!l.contains(s.id)) l.add(s.id);
         return l;
     }
 
     private String filterName(String id) {
+        if (F_REC.equals(id)) return "Continuar jogando";
         if (F_FAV.equals(id)) return "Favoritos";
         if (F_TOP.equals(id)) return "Mais jogados";
         for (Catalog.Sys s : systems) if (s.id.equals(id)) return s.name;
+        for (Catalog.Sys s : Catalog.all()) if (s.id.equals(id)) return s.name;
         return "Todos";
     }
 
@@ -458,7 +475,60 @@ public class Home extends Activity implements CarouselApi.Listener {
     }
 
     private static final int OPT_THEME = 0, OPT_ANIM = 1, OPT_COVERS = 2, OPT_BG = 3, OPT_APPS = 4, OPT_FILES = 5,
-            OPT_GPU = 6, OPT_DRAW = 7, OPT_HELP = 8, OPT_INFO = 9, OPT_ANDROID = 10, OPT_EJECT = 11, OPT_REBOOT = 12, OPT_COUNT = 13;
+            OPT_GPU = 6, OPT_DRAW = 7, OPT_HELP = 8, OPT_INFO = 9, OPT_ANDROID = 10, OPT_EJECT = 11, OPT_REBOOT = 12,
+            OPT_ORDENAR = 13, OPT_VAZIOS = 14, OPT_CAPAS = 15, OPT_LIMPAR = 16, OPT_FILTRO = 17, OPT_RELOGIO = 18,
+            OPT_ENVIAR = 19, OPT_PADRAO = 20, OPT_FONTE = 21, OPT_FPS = 22, OPT_BIOS = 23, OPT_BACKUP = 24, OPT_PROTECAO = 25,
+            OPT_COUNT = 26;
+    private static final int[] PROTECAO_MIN = {0, 5, 10, 30};
+    private long ultimaTecla = System.currentTimeMillis();
+    private FrameLayout protecao;
+    private android.widget.LinearLayout protecaoCaixa;
+    private TextView protecaoHora;
+    private static final String[] FONTES = {"Normal", "Grande", "Maior"};
+    /** Tamanho do texto (painel): multiplica todas as letras do menu. */
+    private float escala = 1f;
+    /** Painel em secoes, como o menu de ajustes de um console de mesa: a mesma ordem do ScrapCade OS, no que a placa tem. */
+    private static final String[] SECAO_NOMES = {"JOGOS", "JOGANDO", "APARÊNCIA", "TELA E ENERGIA", "REDE", "SISTEMA"};
+    private static final int[][] SECOES = {
+            {OPT_FILES, OPT_EJECT, OPT_ORDENAR, OPT_VAZIOS, OPT_CAPAS, OPT_LIMPAR, OPT_BIOS, OPT_BACKUP},
+            {OPT_FILTRO, OPT_FPS},
+            {OPT_THEME, OPT_FONTE, OPT_ANIM, OPT_COVERS, OPT_BG, OPT_PROTECAO},
+            {OPT_GPU, OPT_DRAW, OPT_RELOGIO},
+            {OPT_ENVIAR},
+            {OPT_APPS, OPT_ANDROID, OPT_HELP, OPT_INFO, OPT_PADRAO, OPT_REBOOT},
+    };
+    private static final String[] ORDENS = {"Nome", "Ano", "Mais jogados", "Últimos jogados"};
+    private final int[] optOrder = montaOrdem();
+    private final TextView[] optRowById = new TextView[OPT_COUNT];
+    private android.widget.ScrollView optScroll;
+    private TextView optSecao;
+    private long padraoAt = 0;
+
+    private static int[] montaOrdem() {
+        int n = 0;
+        for (int[] sc : SECOES) n += sc.length;
+        int[] o = new int[n];
+        int k = 0;
+        for (int[] sc : SECOES) for (int v : sc) o[k++] = v;
+        return o;
+    }
+
+    private static String secaoDe(int opt) {
+        for (int i = 0; i < SECOES.length; i++) for (int v : SECOES[i]) if (v == opt) return SECAO_NOMES[i];
+        return "";
+    }
+
+    /** Anda pelas opcoes na ordem da tela (os titulos das secoes sao pulados). */
+    private void moveOpt(int d) {
+        int i = 0;
+        while (i < optOrder.length && optOrder[i] != optSel) i++;
+        optSel = optOrder[(i + d + optOrder.length) % optOrder.length];
+    }
+
+    private int ordemAtual() {
+        int v = prefs.getInt("ordem", 0);
+        return v < 0 || v > 3 ? 0 : v;
+    }
 
     /** Painel de opcoes (SELECT): tema, animacao, capas, aplicativos, configuracoes do Android. */
     private View buildOptions() {
@@ -471,23 +541,43 @@ public class Home extends Activity implements CarouselApi.Listener {
         body.setPadding(dp(12), dp(6), dp(12), 0);
         LinearLayout left = new LinearLayout(this);
         left.setOrientation(LinearLayout.VERTICAL);
-        left.addView(heading("Opções"));
-        for (int i = 0; i < OPT_COUNT; i++) {
-            TextView row = text(9.5f, Color.WHITE, false);
-            row.setPadding(dp(8), dp(1.6f), dp(8), dp(1.6f));
-            final int idx = i;
-            row.setOnClickListener(new View.OnClickListener() {
-                public void onClick(View v) { optSel = idx; optAction(1); }
-            });
-            optRows.add(row);
-            LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT,
-                    LinearLayout.LayoutParams.WRAP_CONTENT);
-            rp.bottomMargin = dp(1.6f);
-            left.addView(row, rp);
+        for (int sc = 0; sc < SECOES.length; sc++) {   // titulo da secao: letra pequena cinza com um fio embaixo
+            TextView hd = text(7.5f, 0xFF8A9099, true);
+            hd.setText(SECAO_NOMES[sc]);
+            hd.setPadding(dp(2), sc == 0 ? 0 : dp(5), 0, dp(1));
+            left.addView(hd);
+            View fio = new View(this);
+            fio.setBackgroundColor(0xFFD5D8DC);
+            LinearLayout.LayoutParams fp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, Math.max(1, dp(0.6f)));
+            fp.bottomMargin = dp(2);
+            left.addView(fio, fp);
+            for (int id : SECOES[sc]) {
+                TextView row = text(9.5f, Color.WHITE, false);
+                row.setPadding(dp(8), dp(1.6f), dp(8), dp(1.6f));
+                final int idx = id;
+                row.setOnClickListener(new View.OnClickListener() {
+                    public void onClick(View v) { optSel = idx; optAction(1); }
+                });
+                optRows.add(row);
+                optRowById[id] = row;
+                LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT,
+                        LinearLayout.LayoutParams.WRAP_CONTENT);
+                rp.bottomMargin = dp(1.6f);
+                left.addView(row, rp);
+            }
         }
+        // a lista nao cabe nos 480 px da tela: rola junto com a selecao
+        LinearLayout col = new LinearLayout(this);
+        col.setOrientation(LinearLayout.VERTICAL);
+        optSecao = heading(SECAO_NOMES[0]);
+        col.addView(optSecao);
+        optScroll = new android.widget.ScrollView(this);
+        optScroll.setVerticalScrollBarEnabled(false);
+        optScroll.addView(left);
+        col.addView(optScroll, new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, dp(205)));   // dp() = 1,5 px: cabe nos 480 px
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1.15f);
         lp.rightMargin = dp(14);
-        body.addView(left, lp);
+        body.addView(col, lp);
         LinearLayout right = new LinearLayout(this);
         right.setOrientation(LinearLayout.VERTICAL);
         right.addView(heading("Endereço IP"));
@@ -573,19 +663,39 @@ public class Home extends Activity implements CarouselApi.Listener {
         labels[OPT_COVERS] = "Capas dos jogos:   ‹ " + (prefs.getBoolean("covers", true) ? "Mostrar" : "Ocultar") + " ›";
         labels[OPT_BG] = "Fundo do jogo:   ‹ " + (prefs.getBoolean("backdrop", true) ? "Mostrar" : "Ocultar") + " ›";
         labels[OPT_APPS] = "Aplicativos";
-        labels[OPT_FILES] = "Arquivos (copiar, mover, apagar)";
+        labels[OPT_FILES] = "Gerenciador de arquivos";
+        labels[OPT_ORDENAR] = "Ordenar jogos:   ‹ " + ORDENS[ordemAtual()] + " ›";
+        labels[OPT_VAZIOS] = "Consoles vazios:   ‹ " + (prefs.getBoolean("vazios", false) ? "Mostrar" : "Esconder") + " ›";
+        labels[OPT_CAPAS] = "Capas e dados dos jogos:   baixar de novo";
+        labels[OPT_LIMPAR] = "Limpar \"Continuar jogando\"";
+        labels[OPT_FILTRO] = "Filtro de imagem:   ‹ " + (prefs.getBoolean("liso", true) ? "Liso" : "Nenhum") + " ›";
+        labels[OPT_RELOGIO] = "Relógio:   ‹ " + (prefs.getBoolean("relogio12", false) ? "12 h (AM/PM)" : "24 h") + " ›";
+        labels[OPT_ENVIAR] = "Enviar jogos do PC   (endereço ao lado)";
+        labels[OPT_PADRAO] = "Voltar tudo ao padrão";
+        labels[OPT_FONTE] = "Tamanho do texto:   ‹ " + FONTES[Math.max(0, Math.min(2, prefs.getInt("fonte", 0)))] + " ›";
+        labels[OPT_FPS] = "Mostrar FPS no jogo:   ‹ " + (prefs.getBoolean("fps", false) ? "Sim" : "Não") + " ›";
+        labels[OPT_BIOS] = "BIOS dos consoles";
+        int pm = PROTECAO_MIN[protecaoIdx()];
+        labels[OPT_PROTECAO] = "Proteção de tela:   ‹ " + (pm == 0 ? "Desligada" : pm + " min") + " ›";
+        labels[OPT_BACKUP] = "Cópia dos saves no pen drive";
         labels[OPT_GPU] = "Clock da GPU:   ‹ " + gpuMhz() + " MHz ›";
         labels[OPT_DRAW] = "Desenho do menu:   ‹ " + (usingGl ? "GPU" : "CPU") + " ›";
         labels[OPT_HELP] = "Como jogar (botões)";
         labels[OPT_INFO] = "Informações do sistema";
         labels[OPT_ANDROID] = "Configurações do Android";
-        labels[OPT_EJECT] = "Ejetar pen drive (USB)";
-        labels[OPT_REBOOT] = "Reiniciar o aparelho";
-        for (int i = 0; i < optRows.size(); i++) {
-            TextView r = optRows.get(i);
-            r.setText(labels[i]);
-            r.setBackgroundColor(i == optSel ? 0xFF2CCF9A : 0xFF4A4D52);
+        labels[OPT_EJECT] = "Ejetar pen drive";
+        labels[OPT_REBOOT] = "Reiniciar";
+        for (int id = 0; id < OPT_COUNT; id++) {
+            TextView r = optRowById[id];
+            if (r == null) continue;
+            r.setText(labels[id]);
+            r.setBackgroundColor(id == optSel ? 0xFF2CCF9A : 0xFF4A4D52);
         }
+        optSecao.setText(secaoDe(optSel));
+        final TextView sel = optRowById[optSel];
+        if (sel != null && optScroll != null) optScroll.post(new Runnable() {
+            public void run() { optScroll.smoothScrollTo(0, Math.max(0, sel.getTop() - optScroll.getHeight() / 2)); }
+        });
         optIp.setText(ip());
         optWeb.setText("http://" + ip() + ":" + Envio.PORT);
     }
@@ -596,7 +706,7 @@ public class Home extends Activity implements CarouselApi.Listener {
         dim.setVisibility(open ? View.VISIBLE : View.GONE);
         h.removeCallbacks(barsTick);
         if (open) {
-            optSel = 0;
+            optSel = optOrder[0];
             refreshOptions();
             lastCpu = readCpu();
             h.postDelayed(barsTick, 300);
@@ -685,6 +795,88 @@ public class Home extends Activity implements CarouselApi.Listener {
                 if (dir == 1) {
                     toast("Reiniciando...");
                     Catalog.sendCmd("reboot");
+                }
+                return;
+            case OPT_FONTE: {
+                int f = (Math.max(0, Math.min(2, prefs.getInt("fonte", 0))) + dir + 3) % 3;
+                prefs.edit().putInt("fonte", f).commit();
+                toast("Tamanho do texto: " + FONTES[f] + ". Reabrindo o menu...");
+                Intent again = getIntent();
+                finish();
+                startActivity(again);
+                return;
+            }
+            case OPT_FPS:
+                prefs.edit().putBoolean("fps", !prefs.getBoolean("fps", false)).commit();
+                Catalog.fpsShow = prefs.getBoolean("fps", false);
+                break;
+            case OPT_PROTECAO:
+                prefs.edit().putInt("protecao", (protecaoIdx() + dir + PROTECAO_MIN.length) % PROTECAO_MIN.length).commit();
+                break;
+            case OPT_BIOS:
+                if (dir == 1) {
+                    setOptions(false);
+                    showPanel("BIOS dos consoles", biosText());
+                }
+                return;
+            case OPT_BACKUP:
+                if (dir == 1) copiarSaves();
+                return;
+            case OPT_ORDENAR:
+                prefs.edit().putInt("ordem", (ordemAtual() + dir + 4) % 4).commit();
+                applyFilter();
+                break;
+            case OPT_VAZIOS:
+                prefs.edit().putBoolean("vazios", !prefs.getBoolean("vazios", false)).commit();
+                applyFilter();
+                break;
+            case OPT_CAPAS:
+                if (dir == 1) {
+                    new java.io.File(Catalog.romsDir(), ".sem_capa").delete();
+                    new java.io.File(Catalog.romsDir(), ".sem_fundo").delete();
+                    toast("As capas e os dados que faltavam vão ser procurados de novo (precisa de rede).");
+                    reload();
+                }
+                return;
+            case OPT_LIMPAR:
+                if (dir == 1) {
+                    SharedPreferences.Editor e = prefs.edit();
+                    for (String k : prefs.getAll().keySet()) if (k.startsWith("when|")) e.remove(k);
+                    e.commit();
+                    applyFilter();
+                    toast("\"Continuar jogando\" limpo.");
+                }
+                break;
+            case OPT_FILTRO: {
+                boolean liso = !prefs.getBoolean("liso", true);
+                prefs.edit().putBoolean("liso", liso).commit();
+                Catalog.videoSmooth = liso;
+                break;
+            }
+            case OPT_RELOGIO:
+                prefs.edit().putBoolean("relogio12", !prefs.getBoolean("relogio12", false)).commit();
+                tick();
+                break;
+            case OPT_ENVIAR:
+                if (dir == 1) toast("No PC ou no celular, na mesma rede, abra http://" + ip() + ":" + Envio.PORT + " e arraste os jogos.");
+                return;
+            case OPT_PADRAO:
+                if (dir == 1) {
+                    long agora = System.currentTimeMillis();
+                    if (agora - padraoAt > 6000) {   // confirma com um segundo A em ate 6 s
+                        padraoAt = agora;
+                        toast("Volta tema, filtros e opções ao padrão (favoritos, saves e jogos ficam). Aperte A de novo para confirmar.");
+                        return;
+                    }
+                    padraoAt = 0;
+                    SharedPreferences.Editor e = prefs.edit();
+                    for (String k : prefs.getAll().keySet())
+                        if (!(k.startsWith("fav|") || k.startsWith("plays|") || k.startsWith("when|") || k.startsWith("last_"))) e.remove(k);
+                    e.commit();
+                    toast("Padrão restaurado. Reabrindo o menu...");
+                    Intent again = getIntent();
+                    finish();
+                    startActivity(again);
                 }
                 return;
             case OPT_ANDROID:
@@ -880,6 +1072,8 @@ public class Home extends Activity implements CarouselApi.Listener {
 
     /** Monta a lista do filtro atual e mantem o jogo selecionado, se ele continuar na lista. */
     private void applyFilter() {
+        Catalog.videoSmooth = prefs.getBoolean("liso", true);
+        Catalog.fpsShow = prefs.getBoolean("fps", false);
         filters = buildFilters();
         if (!filters.contains(filter)) filter = F_ALL;   // o filtro ficou sem jogo (cartao saiu, jogo apagado, favorito desmarcado)
         List<Catalog.Game> v = new ArrayList<Catalog.Game>();
@@ -891,8 +1085,31 @@ public class Home extends Activity implements CarouselApi.Listener {
                 public int compare(Catalog.Game a, Catalog.Game b) { return plays(b) - plays(a); }
             });
             while (v.size() > 20) v.remove(v.size() - 1);
+        } else if (F_REC.equals(filter)) {   // do mais recente para o mais antigo, no maximo 12
+            for (Catalog.Game g : games) if (when(g) > 0) v.add(g);
+            Collections.sort(v, new Comparator<Catalog.Game>() {
+                public int compare(Catalog.Game a, Catalog.Game b) { return when(b) < when(a) ? -1 : when(b) > when(a) ? 1 : 0; }
+            });
+            while (v.size() > 12) v.remove(v.size() - 1);
         } else {
             for (Catalog.Game g : games) if (filter.length() == 0 || g.sys.id.equals(filter)) v.add(g);
+            final int o = ordemAtual();   // Ordenar jogos (painel); nome e a ordem de sempre
+            if (o == 1) Collections.sort(v, new Comparator<Catalog.Game>() {
+                public int compare(Catalog.Game a, Catalog.Game b) {
+                    Meta.Info ma = Meta.get(a.key()), mb = Meta.get(b.key());
+                    String ya = ma == null ? "" : ma.year, yb = mb == null ? "" : mb.year;
+                    if (ya.length() == 0 && yb.length() == 0) return 0;
+                    if (ya.length() == 0) return 1;   // sem ano: no fim
+                    if (yb.length() == 0) return -1;
+                    return ya.compareTo(yb);
+                }
+            });
+            else if (o == 2) Collections.sort(v, new Comparator<Catalog.Game>() {
+                public int compare(Catalog.Game a, Catalog.Game b) { return plays(b) - plays(a); }
+            });
+            else if (o == 3) Collections.sort(v, new Comparator<Catalog.Game>() {
+                public int compare(Catalog.Game a, Catalog.Game b) { return when(b) < when(a) ? -1 : when(b) > when(a) ? 1 : 0; }
+            });
         }
 
         Catalog.Game cur = carousel.current();
@@ -998,6 +1215,11 @@ public class Home extends Activity implements CarouselApi.Listener {
     @Override
     public boolean dispatchKeyEvent(KeyEvent e) {
         int k = e.getKeyCode();
+        ultimaTecla = System.currentTimeMillis();
+        if (protecao != null && protecao.getVisibility() == View.VISIBLE) {   // acorda: o botao nao faz mais nada
+            if (e.getAction() == KeyEvent.ACTION_UP) protecao.setVisibility(View.GONE);
+            return true;
+        }
         if (!handles(k)) return super.dispatchKeyEvent(e);
         if (e.getAction() == KeyEvent.ACTION_DOWN) key(k, e.getRepeatCount() == 0);
         return true;
@@ -1019,8 +1241,8 @@ public class Home extends Activity implements CarouselApi.Listener {
             return;
         }
         if (optOpen) {
-            if (up) { optSel = (optSel + optRows.size() - 1) % optRows.size(); refreshOptions(); }
-            else if (down) { optSel = (optSel + 1) % optRows.size(); refreshOptions(); }
+            if (up) { moveOpt(-1); refreshOptions(); }
+            else if (down) { moveOpt(1); refreshOptions(); }
             else if (left && first) optAction(-1);
             else if ((right || isOk(k)) && first) optAction(1);
             else if ((isBack(k) || isMenu(k)) && first) setOptions(false);
@@ -1105,12 +1327,13 @@ public class Home extends Activity implements CarouselApi.Listener {
 
     private void tick() {
         h.removeCallbacks(ticker);
-        String now = new SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date());
+        String now = new SimpleDateFormat(prefs.getBoolean("relogio12", false) ? "hh:mm a" : "HH:mm", Locale.getDefault()).format(new Date());
         hClock.setText(now);
         String day = new SimpleDateFormat("EEE, dd/MM", new Locale("pt", "BR")).format(new Date());
         String net = ip();
         hIp.setText(net.length() > 0 ? day + "   •   " + net : day + "   •   sem rede");
         aClock.setText(now);
+        conferirProtecao(now);
         // pen drive ou arquivo novo no cartao, mesmo se o aviso do Android nao chegar
         if (!organizing && (Organizer.hasWork() || Organizer.usbHasNew())) reload();
         h.postDelayed(ticker, 10000);
@@ -1134,7 +1357,7 @@ public class Home extends Activity implements CarouselApi.Listener {
     /** Texto medido em unidades da tela, e nao na escala de fonte do Android. */
     private TextView text(float size, int color, boolean bold) {
         TextView t = new TextView(this);
-        t.setTextSize(TypedValue.COMPLEX_UNIT_PX, size * u);
+        t.setTextSize(TypedValue.COMPLEX_UNIT_PX, size * u * escala);
         t.setTextColor(color);
         if (bold) t.setTypeface(Typeface.DEFAULT_BOLD);
         return t;
@@ -1162,6 +1385,86 @@ public class Home extends Activity implements CarouselApi.Listener {
     }
 
     private void toast(String s) { Toast.makeText(this, s, Toast.LENGTH_LONG).show(); }
+
+    private int protecaoIdx() { return Math.max(0, Math.min(PROTECAO_MIN.length - 1, prefs.getInt("protecao", 2))); }
+
+    private View buildProtecao() {
+        protecao = new FrameLayout(this);
+        protecao.setBackgroundColor(0xF2000000);
+        protecao.setVisibility(View.GONE);
+        protecaoCaixa = new android.widget.LinearLayout(this);
+        protecaoCaixa.setOrientation(android.widget.LinearLayout.VERTICAL);
+        protecaoCaixa.setGravity(Gravity.CENTER_HORIZONTAL);
+        android.widget.ImageView logo = new android.widget.ImageView(this);
+        try {
+            logo.setImageBitmap(android.graphics.BitmapFactory.decodeStream(getAssets().open("logo.jpg")));
+        } catch (Exception ignored) { }
+        logo.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+        protecaoCaixa.addView(logo, new android.widget.LinearLayout.LayoutParams(dp(320), dp(64)));
+        protecaoHora = text(16, 0xCCFFFFFF, true);
+        protecaoHora.setGravity(Gravity.CENTER);
+        protecaoCaixa.addView(protecaoHora);
+        protecao.addView(protecaoCaixa, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.WRAP_CONTENT, FrameLayout.LayoutParams.WRAP_CONTENT));
+        return protecao;
+    }
+
+    /** Chamado pelo relogio a cada 10 s: liga a protecao depois do tempo escolhido e muda a logo de lugar. */
+    private void conferirProtecao(String hora) {
+        if (protecao == null) return;
+        int min = PROTECAO_MIN[protecaoIdx()];
+        boolean ligada = protecao.getVisibility() == View.VISIBLE;
+        if (!ligada && (min == 0 || System.currentTimeMillis() - ultimaTecla < min * 60000L)) return;
+        protecaoHora.setText(hora);
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) protecaoCaixa.getLayoutParams();
+        java.util.Random r = new java.util.Random();
+        int w = Math.max(1, protecao.getWidth() - protecaoCaixa.getWidth()), hh = Math.max(1, protecao.getHeight() - protecaoCaixa.getHeight());
+        lp.leftMargin = r.nextInt(w);
+        lp.topMargin = r.nextInt(hh);
+        protecaoCaixa.setLayoutParams(lp);
+        if (!ligada) protecao.setVisibility(View.VISIBLE);
+    }
+
+    /** BIOS que os emuladores daqui usam (como a tela BIOS dos consoles do ScrapCade OS). */
+    private String biosText() {
+        File sd = Environment.getExternalStorageDirectory(), bios = new File(sd, "bios");
+        StringBuilder b = new StringBuilder();
+        boolean ps1 = false;
+        for (String n : new String[] {"scph1001.bin", "scph5501.bin", "scph7001.bin"}) if (new File(bios, n).isFile()) ps1 = true;
+        b.append(ps1 ? "✓ PlayStation: BIOS original encontrada em bios/\n"
+                     : "• PlayStation: opcional (o PCSX ReARMed tem BIOS própria). A original vai em bios/ (scph1001.bin, scph5501.bin ou scph7001.bin).\n");
+        b.append(new File(new File(Catalog.romsDir(), "neogeo"), "neogeo.zip").isFile()
+                ? "✓ Neo Geo: neogeo.zip em roms/neogeo\n"
+                : "✗ Neo Geo: falta roms/neogeo/neogeo.zip (vem junto de muitos jogos de Neo Geo: o organizador separa sozinho).\n");
+        b.append(new File(bios, "prboom.wad").isFile() ? "✓ Doom (PrBoom): prboom.wad em bios/\n" : "✗ Doom (PrBoom): falta bios/prboom.wad\n");
+        b.append("✓ Game Boy, GBA, NES, SNES, Mega Drive, N64, arcade: não precisam de BIOS aqui.\n");
+        return b.toString();
+    }
+
+    /** Copia saves e preferencias para o pen drive, numa pasta com a data (como no ScrapCade OS). */
+    private void copiarSaves() {
+        final File usb = new File("/mnt/usb");
+        String[] tem = usb.list();
+        if (tem == null) { toast("Coloque um pen drive para copiar os saves."); return; }
+        toast("Copiando os saves para o pen drive...");
+        new Thread(new Runnable() {
+            public void run() {
+                String quando = new SimpleDateFormat("yyyy-MM-dd_HH'h'mm", Locale.US).format(new Date());
+                File dest = new File(new File(usb, "ScrapCade-saves"), quando);
+                File sd = Environment.getExternalStorageDirectory();
+                String msg;
+                try {
+                    Arquivos.copy(new File(sd, "saves"), new File(dest, "saves"));
+                    File prefsDir = new File(getApplicationInfo().dataDir, "shared_prefs");
+                    if (prefsDir.isDirectory()) Arquivos.copy(prefsDir, new File(dest, "preferencias"));
+                    msg = "Saves copiados para ScrapCade-saves/" + quando + " no pen drive.";
+                } catch (Exception e) {
+                    msg = "Não deu para copiar no pen drive (" + e.getMessage() + ").";
+                }
+                final String m = msg;
+                h.post(new Runnable() { public void run() { toast(m); } });
+            }
+        }).start();
+    }
 
     // ------------------------------------------------------------ desenhos pequenos
 

@@ -19,6 +19,10 @@ import java.util.Locale;
  */
 final class Catalog {
     private static final String XASH_PKG = "in.celest.xash3d.hl";
+    /** Painel > JOGANDO > Filtro de imagem: Liso (suaviza) ou Nenhum (pixels como no console). */
+    static boolean videoSmooth = true;
+    /** Painel > JOGANDO > Mostrar FPS. */
+    static boolean fpsShow = false;
     /** O Half-Life nao e um arquivo: a pasta com os dados do jogo faz o papel de ROM. */
     private static final File XASH_DIR = new File(Environment.getExternalStorageDirectory(), "xash/valve");
 
@@ -71,7 +75,7 @@ final class Catalog {
 
     private static String[] a(String... s) { return s; }
 
-    private static List<Sys> all() {
+    static List<Sys> all() {
         List<Sys> l = new ArrayList<Sys>();
         l.add(new Sys("gba", "GBA", "Game Boy Advance", 0xFF6C47C9, Art.ICON_WIDE,
                 a(".gba"), a("gba"),
@@ -190,8 +194,10 @@ final class Catalog {
         // deixa pronta a pasta de cada console, para quem for colocar jogos pelo PC
         if (romsDir().isDirectory()) {
             for (Sys s : sys) new File(romsDir(), s.dirs[0]).mkdirs();
-            new File(romsDir(), "arcade/roms").mkdirs();
             Organizer.inbox().mkdirs();
+            // como no ScrapCade OS: saves e BIOS ao lado de roms, nao dentro
+            new File(Environment.getExternalStorageDirectory(), "saves").mkdirs();
+            new File(Environment.getExternalStorageDirectory(), "bios").mkdirs();
         }
         File[] top = romsDir().listFiles();
         if (top != null) {
@@ -396,12 +402,14 @@ final class Catalog {
                 if (path.indexOf(c) >= 0) return "Renomeie o arquivo: tire do nome o símbolo " + c;
             if (!"psx".equals(e.core) && !new File("/data/local/cores/" + e.core + ".so").isFile())
                 return "Falta o emulador " + e.core + " neste aparelho";
-            File saves = new File(romsDir(), "saves"), bios = new File(romsDir(), "bios");
+            File sd = Environment.getExternalStorageDirectory();
+            File saves = new File(sd, "saves"), bios = new File(sd, "bios");   // mesmas pastas do ScrapCade OS
             saves.mkdirs();
             bios.mkdirs();
             java.io.FileWriter w = new java.io.FileWriter(new File(romsDir(), ".retroarch.cfg"));
             w.write("audio_enable = \"false\"\nvideo_font_enable = \"false\"\ninput_overlay_enable = \"false\"\n"
-                    + "video_vsync = \"true\"\nvideo_threaded = \"false\"\nvideo_smooth = \"true\"\n"
+                    + "video_vsync = \"true\"\nvideo_threaded = \"false\"\nvideo_smooth = \"" + (videoSmooth ? "true" : "false") + "\"\n"
+                    + "fps_show = \"" + (fpsShow ? "true" : "false") + "\"\n"
                     + "rewind_enable = \"false\"\ninput_autodetect_enable = \"false\"\n"
                     // trocar de jogo mata o processo: o cartao de memoria tem de ir para o SD sozinho
                     + "autosave_interval = \"10\"\n"
@@ -511,7 +519,7 @@ final class Catalog {
         File arcade = new File(romsDir(), "arcade");
         String want = rom.getName().toLowerCase(Locale.US);
         java.util.HashSet<String> have = new java.util.HashSet<String>();
-        String[] names = new File(arcade, "roms").list();
+        String[] names = arcade.list();
         if (names != null) for (String n : names) have.add(n.toLowerCase(Locale.US));
         java.io.BufferedReader r = null;
         try {

@@ -10,8 +10,8 @@ import android.graphics.drawable.GradientDrawable;
 
 /** Temas visuais do fliperama (escolhidos no menu de opcoes com SELECT). */
 final class Theme {
-    static final int CARBONO = 0, NEON = 1, ARCADE = 2, CLARO = 3, AURORA = 4;
-    static final String[] NAMES = {"Carbono", "Neon", "Arcade", "Claro", "Aurora"};
+    static final int CARBONO = 0, NEON = 1, ARCADE = 2, CLARO = 3, AURORA = 4, PIXEL = 5, PORTATIL = 6, OCEANO = 7;
+    static final String[] NAMES = {"Carbono", "Neon", "Arcade", "Claro", "Aurora", "8 bits", "Portátil", "Oceano"};
     static int current = AURORA;
     /** Para ler o fundo do tema Aurora dos assets. */
     static android.content.Context ctx;
@@ -22,7 +22,13 @@ final class Theme {
     static int backColor(int col) { return current == AURORA ? 0 : col; }
 
     /** Borda da capa selecionada. */
-    static int accent(int col) { return current == AURORA ? 0xFF32E6A8 : Art.lighten(col, 0.35f); }
+    static int accent(int col) {
+        if (current == AURORA) return 0xFF32E6A8;
+        if (current == PIXEL) return 0xFFFFD34E;
+        if (current == PORTATIL) return 0xFFB8DC48;
+        if (current == OCEANO) return 0xFF5CE1E6;
+        return Art.lighten(col, 0.35f);
+    }
 
     private static void aurora(Canvas c, Paint p, int w, int h) {
         p.setShader(null);
@@ -99,6 +105,64 @@ final class Theme {
                 p.setShader(new LinearGradient(0, 0, 0, h, 0xFFF4F6F9, Art.blend(0xFFF4F6F9, col, 0.18f),
                         Shader.TileMode.CLAMP));
                 c.drawRect(0, 0, w, h, p);
+                p.setShader(null);
+                break;
+            }
+            case PIXEL: {   // ceu noturno com estrelas quadradas e chao quadriculado (igual ao ScrapCade OS)
+                float hz = h * 0.66f;
+                p.setShader(new LinearGradient(0, 0, 0, hz, 0xFF07061A, 0xFF1B1550, Shader.TileMode.CLAMP));
+                c.drawRect(0, 0, w, hz, p);
+                p.setShader(null);
+                long seed = 7;
+                for (int i = 0; i < 90; i++) {
+                    seed = (seed * 1103515245L + 12345L) & 0xFFFFFFFFL;
+                    float x = (seed % 10000) / 10000f * w;
+                    seed = (seed * 1103515245L + 12345L) & 0xFFFFFFFFL;
+                    float y = (seed % 10000) / 10000f * h * 0.6f, q = (seed % 3 + 1) * d;
+                    p.setColor(seed % 5 != 0 ? 0xAAFFFFFF : 0xFFFFD34E);
+                    c.drawRect((float) Math.floor(x), (float) Math.floor(y), (float) Math.floor(x) + q, (float) Math.floor(y) + q, p);
+                }
+                float q = 16 * d;
+                p.setColor(0xFF100D30);
+                c.drawRect(0, hz, w, h, p);
+                p.setColor(0xFF1A1648);
+                for (float y = hz; y < h; y += q)
+                    for (float x = 0; x < w; x += q)
+                        if (((int) (x / q) + (int) ((y - hz) / q)) % 2 == 1) c.drawRect(x, y, x + q, y + q, p);
+                p.setColor(Art.alpha(Art.lighten(col, 0.3f), 200));
+                c.drawRect(0, hz, w, hz + 2 * d, p);
+                break;
+            }
+            case PORTATIL: {   // tela de LCD verde com linhas de varredura
+                p.setShader(new LinearGradient(0, 0, 0, h, 0xFF3C5A22, 0xFF0F200C, Shader.TileMode.CLAMP));
+                c.drawRect(0, 0, w, h, p);
+                p.setShader(new RadialGradient(w / 2f, h * 0.45f, w * 0.6f, 0x40C8E880, 0, Shader.TileMode.CLAMP));
+                c.drawRect(0, 0, w, h, p);
+                p.setShader(null);
+                p.setColor(0x18000000);
+                for (float y = 0; y < h; y += 3 * d) c.drawRect(0, y, w, y + d, p);
+                break;
+            }
+            case OCEANO: {   // azul profundo, raios de luz vindos de cima e bolhas
+                p.setShader(new LinearGradient(0, 0, 0, h, 0xFF06486A, 0xFF010A16, Shader.TileMode.CLAMP));
+                c.drawRect(0, 0, w, h, p);
+                p.setShader(new LinearGradient(0, 0, 0, h * 0.9f, 0x30A8F0FF, 0x00A8F0FF, Shader.TileMode.CLAMP));
+                for (int i = 0; i < 5; i++) {
+                    float cx = w * (0.15f + 0.18f * i);
+                    android.graphics.Path t = new android.graphics.Path();
+                    t.moveTo(cx - 18 * d, 0);
+                    t.lineTo(cx + 18 * d, 0);
+                    t.lineTo(cx + (i - 2) * 60 * d, h * 0.9f);
+                    t.close();
+                    c.drawPath(t, p);
+                }
+                long seed = 3;
+                for (int i = 0; i < 26; i++) {
+                    seed = (seed * 1103515245L + 12345L) & 0xFFFFFFFFL;
+                    float x = (seed % 10000) / 10000f * w, y = h * (0.3f + ((seed >> 8) % 700) / 1000f), r = (2 + seed % 5) * d;
+                    p.setShader(new RadialGradient(x, y, r, 0x50C8F4FF, 0, Shader.TileMode.CLAMP));
+                    c.drawCircle(x, y, r, p);
+                }
                 p.setShader(null);
                 break;
             }
@@ -189,12 +253,16 @@ final class Theme {
         if (current == CLARO || current == AURORA) return col;
         if (current == NEON) return Art.darken(col, 0.55f);
         if (current == ARCADE) return Art.blend(col, 0xFFFF3EA5, 0.45f);
+        if (current == PIXEL) return col;
+        if (current == PORTATIL) return Art.blend(col, 0xFF2F5A1F, 0.65f);
+        if (current == OCEANO) return Art.blend(col, 0xFF0A4C6E, 0.45f);
         return Art.darken(col, 0.30f);
     }
 
     static int cardText(int col) {
         if (current == CLARO) return Art.darken(col, 0.25f);
         if (current == NEON) return Art.lighten(col, 0.55f);
+        if (current == PORTATIL) return 0xFFE4F6C8;
         return 0xFFFFFFFF;
     }
 
@@ -218,6 +286,9 @@ final class Theme {
             case NEON: top = Art.blend(0xFF020205, col, 0.18f); bottom = 0xFF020205; break;
             case ARCADE: top = Art.blend(0xFF12052A, col, 0.2f); bottom = 0xFF050208; break;
             case CLARO: top = 0xFFF4F6F9; bottom = Art.blend(0xFFF4F6F9, col, 0.18f); break;
+            case PIXEL: top = 0xFF07061A; bottom = 0xFF1B1550; break;
+            case PORTATIL: top = 0xFF3C5A22; bottom = 0xFF0F200C; break;
+            case OCEANO: top = 0xFF06486A; bottom = 0xFF010A16; break;
             default: top = Art.darken(col, 0.45f); bottom = 0xFF06070A; break;
         }
         return new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{top, bottom});

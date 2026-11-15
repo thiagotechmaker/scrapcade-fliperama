@@ -1,85 +1,90 @@
-# ScrapCade: fliperama no Android 2.3
+# ScrapCade no iChroma: fliperama no Android 2.3
 
-Menu de jogos (estilo "capas em carrossel") e driver de controle para um aparelho Android 2.3.3 com 512 MB de RAM,
-processador S5PV210 de 1 GHz e saída de vídeo de 800x480, que foi reaproveitado como fliperama.
+<p align="center"><img src="art_src/scrapcade/logo_tela_800.png" width="560" alt="ScrapCade OS"></p>
 
-## T-OS e ScrapCade: o que é cada um
+Um analisador de laboratório **iChroma II** que ia para o lixo eletrônico virou fliperama: placa ARM de 1 núcleo a 1 GHz (S5PV210), 512 MB de memória, tela de 800x480 e Android 2.3.3. O menu é o **ScrapCade**, o mesmo da versão para computadores, o [ScrapCade OS](https://github.com/thiagotechmaker/scrapcade.os), cada um dentro do que a sua máquina aguenta.
 
-O projeto tem duas partes:
+## As duas versões do ScrapCade
 
-- **ScrapCade é o programa do menu.** É um app Android próprio (`com.thiago.launcher`), escrito em Java e instalado como qualquer app. Ele fica configurado como a tela inicial, por isso aparece quando o aparelho liga. Dá para atualizar ou desinstalar sem mexer no sistema.
-- **T-OS é o sistema modificado.** É o Android 2.3 original do aparelho mais as mudanças que o transformam em fliperama:
-  - **Driver do controle (`joyd`):** programa em C em `/system/xbin`, iniciado por um script de boot.
-  - **Logo de inicialização:** gravado no bootloader e no kernel.
-  - **Biblioteca de áudio muda:** trocada em `/system/lib`, porque a original trava o aparelho.
-  - **Boot mais rápido:** apps de sistema pré-compilados.
-  - **ADB pela rede:** ligado no sistema, para manutenção.
+| | **ScrapCade no iChroma** (este repositório) | **ScrapCade OS** (PC) |
+|---|---|---|
+| Máquina | placa ARM de 1 núcleo, 512 MB, tirada do lixo eletrônico | PCs e notebooks de 64 bits (32 bits em breve) |
+| Sistema | Android 2.3 do aparelho, com bootloader, kernel e boot modificados | Linux próprio, montado com o Buildroot |
+| Menu | ScrapCade em Java (o original) | ScrapCade em C++ e SDL2 |
+| Emuladores | os leves: até PlayStation 1 e Nintendo 64, com limites | todos os que o PC aguentar |
+
+Os dois têm o mesmo carrossel de capas, o mesmo painel Sistema em seções, o mesmo gerenciador de arquivos e as mesmas pastas (`roms/<console>`, `Jogos novos`, `saves`, `bios`). O que nasce num é levado para o outro, dentro do que cada máquina aguenta.
+
+## O que tem no aparelho
+
+- **ScrapCade, o menu.** É um app Android próprio (`com.thiago.launcher`), em Java, configurado como tela inicial. Dá para atualizar ou desinstalar sem mexer no sistema.
+- **Mudanças no sistema do aparelho:**
+  - driver do controle (`joyd`), em C, iniciado no boot;
+  - logo do ScrapCade OS gravada no bootloader e no kernel, e na animação de boot do Android;
+  - biblioteca de áudio muda (a original trava o aparelho);
+  - boot mais rápido (apps de sistema pré-compilados);
+  - ADB pela rede, para manutenção.
 
 Este repositório tem o código do ScrapCade e do `joyd`. As modificações de bootloader, kernel e bibliotecas do sistema não estão aqui, porque dependem do firmware do aparelho.
 
-## Diferenças em relação ao iChroma original
+## Como é
 
-O aparelho é um iChroma II (analisador de laboratório, Boditech). O sistema original era clínico e fechado; esta versão é um fliperama.
-
-| | iChroma II original | ScrapCade (esta versão) |
-|---|---|---|
-| Uso | analisador de imunoensaio, com dados de pacientes | fliperama, sem dados pessoais |
-| Menu | telas do fabricante | menu de capas em carrossel, feito em OpenGL ES |
-| Rede | não usada pelo usuário | IP na barra de cima; página no navegador (porta 8080) para enviar, apagar e trocar capas; ADB pela rede para manutenção (porta 5555); hora pela internet (NTP) |
-| Som | alarmes e bipes de teste | **sem som**: a biblioteca de áudio original reinicia o aparelho (ver Limitações) |
-| Controle | não tinha | controle USB Xbox 360, com o driver `joyd` |
-| Jogos | não tinha | sistema por console: PS1, GBA, GB/GBC, NES, SNES, Mega Drive, N64, Neo Geo, arcade e PC (Half-Life e Doom) |
-
-### Como funciona o modo "só jogar"
-
-1. Copie o jogo para a pasta **Jogos novos** do cartão, ou ligue um pen drive no cabo OTG. Também dá para enviar pelo navegador (porta 8080).
-2. O organizador move o arquivo para a pasta do console. Ele só mexe em arquivo que parou de crescer, para não pegar cópia pela metade.
-3. Com a rede ligada, o menu baixa sozinho a capa e a imagem de fundo, e preenche ano, empresa e gênero. Sem rede, mostra o nome do jogo e o console.
-4. Você escolhe o jogo com o controle e aperta A. O menu escolhe o emulador certo e abre direto no jogo, sem configurar nada.
-
-## O que tem aqui
-
-- `launcher/`: o app de menu (Java, Android 2.3). Carrossel de capas pela GPU, favoritos, mais jogados, fundo do jogo,
-  gerenciador de arquivos pelo controle e pela página no navegador (porta 8080), e organizador da pasta "Jogos novos".
-- `joypad/`: `joyd`, o driver do controle em C sem libc (roda como root no aparelho). Lê comandos de um arquivo
-  (`game`, `ra <núcleo> <jogo>`, `n64 <jogo>`, `xash`, `hora`, `gpu`, `reboot`), converte o controle USB em teclas
-  e abre os emuladores.
-- `art_src/`: scripts que geram a arte e os índices de dados (CRC, nomes, metadados) a partir de fontes públicas.
-
-## Emuladores usados
-
-Nenhum emulador ou jogo está neste repositório. Os emuladores são instalados à parte:
-RetroArch 0.9.9.6 com núcleos libretro (FB Alpha 2012, SNES9x 2005, PicoDrive, QuickNES, PCSX ReARMed, PrBoom),
-Mupen64Plus AE 2.4.4, My Boy! Free e Xash3D.
-
-## Limitações conhecidas
-
-- O som está desligado: a biblioteca de áudio original do aparelho reinicia o sistema ao abrir um jogo com áudio.
-- Nintendo 64 roda a 17–39 quadros por segundo, conforme o jogo. O analógico do controle funciona como direcional: o Android 2.3 não reconhece o eixo como joystick.
-- Transferência por cabo USB não funciona na porta mini USB (ela aparece como adaptador serial). Use o pen drive na porta de cima ou a página na porta 8080.
-- Final Fight (versão EUA de 1990) não roda no FB Alpha 2012: o núcleo só aceita outras revisões do jogo.
-
-## Capturas
-
-- `capturas/menu.png`: menu principal (carrossel de capas, barra de cima com o filtro e a hora).
-- `capturas/painel_sistema.png`: painel "Sistema" (tema, animações, uso de CPU, memória e cartão).
-- `capturas/arquivos.png`: gerenciador de arquivos pelo controle (copiar, mover, apagar, colar).
-
-Fotos do aparelho (em `fotos/`): frente com o menu ligado, traseira com a porta de rede e o adaptador USB, e o menu ao vivo. A tela mostra capas de jogos de terceiros, a mesma ressalva das capturas.
-
-### Menu principal
+Liga direto no menu: um carrossel de capas no formato de cada caixa, com filtros por console, **Continuar jogando** (os últimos 12 abertos), favoritos, mais jogados e os dados de cada jogo (ano, empresa, gênero).
 
 ![Menu principal](capturas/menu.png)
 
-### Painel Sistema
+O **painel Sistema** (botão SELECT) segue a mesma ordem do ScrapCade OS, em seções como o menu de ajustes de um console:
 
-![Painel Sistema](capturas/painel_sistema.png)
+- **JOGOS:** gerenciador de arquivos, ejetar pen drive, ordenar jogos (nome, ano, mais jogados, últimos), consoles vazios, capas de novo, limpar "Continuar jogando", BIOS dos consoles, cópia dos saves no pen drive.
+- **JOGANDO:** filtro de imagem (liso ou nenhum), FPS na tela.
+- **APARÊNCIA:** 8 temas (Carbono, Neon, Arcade, Claro, Aurora, 8 bits, Portátil, Oceano), tamanho do texto, animações, capas, fundo do jogo, proteção de tela.
+- **TELA E ENERGIA:** clock da GPU, desenho do menu (GPU ou CPU), relógio 12/24 h.
+- **REDE:** enviar jogos do PC pelo navegador.
+- **SISTEMA:** aplicativos, configurações do Android, como jogar, informações, voltar tudo ao padrão, reiniciar.
 
-### Gerenciador de arquivos
+![Painel Sistema, seção JOGOS](capturas/painel_sistema.png)
+
+![Painel Sistema, seção APARÊNCIA com o tema 8 bits](capturas/painel_aparencia.png)
+
+**BIOS dos consoles** confere o que cada emulador precisa. A **proteção de tela** escurece a tela com a logo e a hora quando o menu fica parado (5, 10 ou 30 minutos), e qualquer botão volta sem fazer nada.
+
+![BIOS dos consoles](capturas/bios.png)
+
+![Proteção de tela](capturas/protecao_de_tela.png)
+
+O **gerenciador de arquivos** funciona pelo controle e pela página no navegador (porta 8080): A abre, Y mostra as ações (copiar, mover, clonar, apagar), X cola na pasta aberta.
 
 ![Gerenciador de arquivos](capturas/arquivos.png)
 
-### Aparelho
+## Colocar jogos
+
+1. Copie o jogo para a pasta **Jogos novos** do cartão, ligue um pen drive na porta USB de cima, ou envie pelo navegador (`http://IP:8080`, o IP aparece no alto da tela).
+2. O organizador leva o arquivo para a pasta do console. Ele só mexe em arquivo que parou de crescer, para não pegar cópia pela metade.
+3. Com a rede ligada, o menu baixa sozinho a capa e a imagem de fundo, e preenche ano, empresa e gênero.
+4. Escolha o jogo com o controle e aperte A: o menu abre o emulador certo direto no jogo.
+
+**Em qualquer jogo:** SELECT + START volta ao menu. **Arcade e Neo Geo:** SELECT põe ficha, START começa.
+
+## O que tem aqui
+
+- `launcher/`: o app de menu (Java, Android 2.3). Carrossel de capas pela GPU, painel em seções, temas, favoritos, mais jogados, "Continuar jogando", fundo do jogo, proteção de tela, gerenciador de arquivos pelo controle e pela página no navegador (porta 8080), e o organizador da pasta "Jogos novos".
+- `joypad/`: `joyd`, o driver do controle em C sem libc (roda como root no aparelho). Lê comandos de um arquivo (`game`, `ra <núcleo> <jogo>`, `n64 <jogo>`, `xash`, `hora`, `gpu`, `reboot`), converte o controle USB em teclas e abre os emuladores.
+- `art_src/`: scripts que geram a arte (logo, logos brancos dos consoles) e os índices de dados (CRC, nomes, metadados) a partir de fontes públicas, e o que grava a logo no kernel.
+
+## Emuladores usados
+
+Nenhum emulador ou jogo está neste repositório. Os emuladores são instalados à parte: RetroArch 0.9.9.6 com núcleos libretro (FB Alpha 2012, Snes9x 2005, PicoDrive, QuickNES, PCSX ReARMed, PrBoom), Mupen64Plus AE 2.4.4, My Boy! Free e Xash3D.
+
+## Limitações conhecidas
+
+- **Sem som:** a biblioteca de áudio original do aparelho reinicia o sistema ao abrir um jogo com áudio.
+- **Nintendo 64** roda a 17–39 quadros por segundo, conforme o jogo. O analógico funciona como direcional: o Android 2.3 não reconhece o eixo como joystick.
+- **Cabo USB no PC** não funciona na porta mini USB (ela aparece como adaptador serial). Use o pen drive na porta de cima ou a página na porta 8080.
+- **Final Fight** (versão EUA de 1990) não roda no FB Alpha 2012: o núcleo só aceita outras revisões do jogo.
+- **Pela placa ficam de fora:** Wi-Fi, Bluetooth, pasta na rede do Windows, SSH, brilho, modo desktop, instalar, atualizar sozinho, jogos grátis e conquistas (o Android 2.3 não abre os sites atuais em HTTPS). PSP, Saturn, Dreamcast e Nintendo DS são pesados demais para 1 núcleo a 1 GHz.
+- **Ainda por fazer:** perfis com avatar ("Quem vai jogar?"), tema com imagem sua e idioma.
+
+## Aparelho
 
 ![Aparelho ligado](fotos/aparelho_frente.jpg)
 
@@ -87,7 +92,7 @@ Fotos do aparelho (em `fotos/`): frente com o menu ligado, traseira com a porta 
 
 ![Traseira com rede e USB](fotos/aparelho_traseira_rede_usb.jpg)
 
-As capas dos jogos e os logos dos consoles nas capturas são de terceiros.
+As capas dos jogos e os logos dos consoles nas capturas e nas fotos são de terceiros.
 
 ## Inspirações
 
@@ -95,17 +100,6 @@ As capas dos jogos e os logos dos consoles nas capturas são de terceiros.
 - **Batocera** (sistema de emuladores para PC e placas): a organização por pasta de console (`roms/<console>`) e a pasta de capas `images/` ao lado de cada jogo, com nomes iguais aos do acervo.
 
 O desenho, as capas em carrossel e o código são próprios. Nenhum arquivo do Aurora ou do Batocera foi copiado.
-
-## Plano futuro
-
-Este projeto é um passo. A ideia maior é **reaproveitar equipamentos que iriam para o lixo** e dar a eles um uso útil, como fliperama ou computador de uso diário.
-
-- **Sistema Linux no lugar do Android 2.3:** um sistema tipo Batocera (distribuição Linux para emuladores), com emuladores atualizados e suporte a mais hardware.
-- **Interface tipo Aurora:** o mesmo carrossel de capas, mas com um front-end próprio que roda nesse sistema.
-- **Equipamentos de sucata:** começar por aparelhos e computadores antigos que já estão parados, para dar uma segunda vida a eles.
-- **Uso do dia a dia:** além de jogos, o mesmo sistema para navegar, assistir vídeos e ouvir música, em aparelhos que de outra forma seriam descartados.
-
-Hoje nada disso existe ainda. O aparelho atual (iChroma II, Android 2.3) é o ponto de partida, e o que está aqui é o que já funciona nele.
 
 ## Como compilar
 
