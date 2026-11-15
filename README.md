@@ -3,7 +3,7 @@
 <p align="center"><img src="art_src/scrapcade/logo_tela_800.png" width="560" alt="ScrapCade OS"></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/vers%C3%A3o-v0.3.0--beta-orange" alt="versão v0.3.0-beta">
+  <img src="https://img.shields.io/badge/vers%C3%A3o-v0.3.1--beta-orange" alt="versão v0.3.1-beta">
   <img src="https://img.shields.io/badge/arquitetura-ARMv7%20(S5PV210)-informational" alt="arquitetura ARMv7">
   <img src="https://img.shields.io/badge/base-Android%202.3.3-lightgrey" alt="base Android 2.3.3">
   <img src="https://img.shields.io/badge/licen%C3%A7a-GPLv3-blue" alt="licença GPLv3">
@@ -39,9 +39,17 @@ O aparelho tem duas partes:
 
 </details>
 
-**Colocar jogos:** pela página no navegador (`http://IP:8080`, o IP aparece no alto da tela), por um pen drive na porta USB de cima ou copiando para a pasta `Jogos novos` do cartão. O organizador leva cada jogo ao console certo e o menu baixa a capa e os dados. As pastas do cartão são as mesmas do ScrapCade OS: `roms/<console>`, `Jogos novos`, `saves`, `bios` e `themes`. Em qualquer jogo, SELECT + START volta ao menu; no arcade e no Neo Geo, SELECT põe ficha.
+**Colocar jogos:** pela página no navegador (`http://IP:8080`, o IP aparece no alto da tela), por um pen drive na porta USB de cima ou copiando para a pasta `Jogos novos` do cartão. O organizador leva cada jogo ao console certo e o menu baixa a capa e os dados. As pastas do cartão são as mesmas do ScrapCade OS: `roms/<console>`, `Jogos novos`, `saves`, `bios` e `themes`. O gerenciador de arquivos do painel copia, move e apaga pelo controle. Em qualquer jogo, SELECT + START volta ao menu; no arcade e no Neo Geo, SELECT põe ficha.
+
+<p align="center"><img src="capturas/arquivos.png" width="49%" alt="Gerenciador de arquivos pelo controle"></p>
 
 ![Aparelho ligado](fotos/aparelho_frente.jpg)
+
+<details><summary>Ver mais fotos do aparelho</summary>
+
+<p align="center"><img src="fotos/aparelho_menu_ao_vivo.jpg" width="49%" alt="Menu na tela do iChroma II"> <img src="fotos/aparelho_traseira_rede_usb.jpg" width="49%" alt="Traseira: cabo de rede e pen drive na porta USB"></p>
+
+</details>
 
 ## Hardware suportado
 

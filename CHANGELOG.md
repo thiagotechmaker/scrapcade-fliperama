@@ -4,6 +4,15 @@ Todas as mudanças importantes do ScrapCade no iChroma ficam aqui. O formato seg
 
 ## [Unreleased]
 
+## [0.3.1-beta] - 2026-11-15
+
+### Corrigido
+- Sistema > Informações não mostra mais o nome antigo (T-OS): agora diz "Android 2.3.3 com boot próprio" e a versão do ScrapCade, lida do app.
+
+### Alterado
+- `art_src/logo_scrapcade.py` gera a logo de pixel atual (a mesma do PC) com caminhos do repositório; o gerador da logo antiga, que dependia de uma arte que não está aqui, saiu. Com o zImage de fábrica do aparelho, também grava a logo no kernel.
+- README com o gerenciador de arquivos e mais fotos do aparelho.
+
 ## [0.3.0-beta] - 2026-11-15
 
 ### Adicionado
