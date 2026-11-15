@@ -101,7 +101,19 @@ public class Home extends Activity implements CarouselApi.Listener {
         getWindow().setFormat(PixelFormat.RGBA_8888); // texto translucido por cima da camada da GPU
         u = Carousel.unit(this);
         pm = getPackageManager();
-        prefs = getSharedPreferences("fliperama", MODE_PRIVATE);
+        // perfil que esta jogando: preferencias e saves dele
+        perfis = new Perfis(this, u, new Perfis.Escolha() {
+            public void escolheu(String id) {
+                toast("Olá, " + perfis.nome(id) + "!");
+                Intent again = getIntent();
+                finish();
+                startActivity(again);
+            }
+        });
+        prefs = getSharedPreferences(Perfis.arquivo(perfis.atual()), MODE_PRIVATE);
+        Catalog.savesSub = Perfis.savesSub(perfis.atual());
+        String fi = prefs.getString("fundo_img", null);
+        Theme.fundoUsuario = fi != null && new File(fi).isFile() ? fi : null;
         escala = escalaFonte();
         Theme.ctx = getApplicationContext();
         if (!prefs.getBoolean("aurora_v1", false))       // o visual novo vale para quem ja tinha outro tema salvo
@@ -151,6 +163,7 @@ public class Home extends Activity implements CarouselApi.Listener {
         root.addView(buildOptions(), new FrameLayout.LayoutParams(fp, fp));
         root.addView(buildInfo(), new FrameLayout.LayoutParams(fp, fp));
         root.addView(buildProtecao(), new FrameLayout.LayoutParams(fp, fp));
+        root.addView(perfis.view(), new FrameLayout.LayoutParams(fp, fp));
         splash(root);
         setContentView(root);
         carousel.setAnimMs(prefs.getBoolean("fast", false) ? 130 : 200);
@@ -159,6 +172,8 @@ public class Home extends Activity implements CarouselApi.Listener {
         reload();
         show(SCR_MAIN);
         watchStorage();
+        if (!Perfis.perguntado && perfis.ids().size() >= 2) perfis.abrir();   // ligou agora: quem vai jogar?
+        Perfis.perguntado = true;
     }
 
     /**
@@ -478,21 +493,24 @@ public class Home extends Activity implements CarouselApi.Listener {
             OPT_GPU = 6, OPT_DRAW = 7, OPT_HELP = 8, OPT_INFO = 9, OPT_ANDROID = 10, OPT_EJECT = 11, OPT_REBOOT = 12,
             OPT_ORDENAR = 13, OPT_VAZIOS = 14, OPT_CAPAS = 15, OPT_LIMPAR = 16, OPT_FILTRO = 17, OPT_RELOGIO = 18,
             OPT_ENVIAR = 19, OPT_PADRAO = 20, OPT_FONTE = 21, OPT_FPS = 22, OPT_BIOS = 23, OPT_BACKUP = 24, OPT_PROTECAO = 25,
-            OPT_COUNT = 26;
+            OPT_PERFIL = 26, OPT_FUNDO_IMG = 27, OPT_COUNT = 28;
+    private Perfis perfis;
     private static final int[] PROTECAO_MIN = {0, 5, 10, 30};
     private long ultimaTecla = System.currentTimeMillis();
     private FrameLayout protecao;
     private android.widget.LinearLayout protecaoCaixa;
     private TextView protecaoHora;
+    private android.widget.ImageView protecaoCena;
+    private TextView protecaoNome;
     private static final String[] FONTES = {"Normal", "Grande", "Maior"};
     /** Tamanho do texto (painel): multiplica todas as letras do menu. */
     private float escala = 1f;
     /** Painel em secoes, como o menu de ajustes de um console de mesa: a mesma ordem do ScrapCade OS, no que a placa tem. */
     private static final String[] SECAO_NOMES = {"JOGOS", "JOGANDO", "APARÊNCIA", "TELA E ENERGIA", "REDE", "SISTEMA"};
     private static final int[][] SECOES = {
-            {OPT_FILES, OPT_EJECT, OPT_ORDENAR, OPT_VAZIOS, OPT_CAPAS, OPT_LIMPAR, OPT_BIOS, OPT_BACKUP},
+            {OPT_PERFIL, OPT_FILES, OPT_EJECT, OPT_ORDENAR, OPT_VAZIOS, OPT_CAPAS, OPT_LIMPAR, OPT_BIOS, OPT_BACKUP},
             {OPT_FILTRO, OPT_FPS},
-            {OPT_THEME, OPT_FONTE, OPT_ANIM, OPT_COVERS, OPT_BG, OPT_PROTECAO},
+            {OPT_THEME, OPT_FUNDO_IMG, OPT_FONTE, OPT_ANIM, OPT_COVERS, OPT_BG, OPT_PROTECAO},
             {OPT_GPU, OPT_DRAW, OPT_RELOGIO},
             {OPT_ENVIAR},
             {OPT_APPS, OPT_ANDROID, OPT_HELP, OPT_INFO, OPT_PADRAO, OPT_REBOOT},
@@ -675,6 +693,9 @@ public class Home extends Activity implements CarouselApi.Listener {
         labels[OPT_FONTE] = "Tamanho do texto:   ‹ " + FONTES[Math.max(0, Math.min(2, prefs.getInt("fonte", 0)))] + " ›";
         labels[OPT_FPS] = "Mostrar FPS no jogo:   ‹ " + (prefs.getBoolean("fps", false) ? "Sim" : "Não") + " ›";
         labels[OPT_BIOS] = "BIOS dos consoles";
+        labels[OPT_PERFIL] = "Perfil:   " + perfis.nome(perfis.atual()) + "   (A troca)";
+        String fi = Theme.fundoUsuario;
+        labels[OPT_FUNDO_IMG] = "Imagem de fundo:   ‹ " + (fi == null ? "a do tema" : new File(fi).getName()) + " ›";
         int pm = PROTECAO_MIN[protecaoIdx()];
         labels[OPT_PROTECAO] = "Proteção de tela:   ‹ " + (pm == 0 ? "Desligada" : pm + " min") + " ›";
         labels[OPT_BACKUP] = "Cópia dos saves no pen drive";
@@ -810,6 +831,32 @@ public class Home extends Activity implements CarouselApi.Listener {
                 prefs.edit().putBoolean("fps", !prefs.getBoolean("fps", false)).commit();
                 Catalog.fpsShow = prefs.getBoolean("fps", false);
                 break;
+            case OPT_PERFIL:
+                if (dir == 1) {
+                    setOptions(false);
+                    perfis.abrir();
+                }
+                return;
+            case OPT_FUNDO_IMG: {
+                // as imagens da pasta themes do cartao (pela pagina de Arquivos ou pelo leitor de cartao), e "a do tema"
+                java.util.List<String> imgs = new java.util.ArrayList<String>();
+                imgs.add(null);
+                File[] fs = new File(Environment.getExternalStorageDirectory(), "themes").listFiles();
+                if (fs != null) {
+                    java.util.Arrays.sort(fs);
+                    for (File f : fs) {
+                        String n = f.getName().toLowerCase(Locale.US);
+                        if (f.isFile() && (n.endsWith(".png") || n.endsWith(".jpg") || n.endsWith(".jpeg"))) imgs.add(f.getAbsolutePath());
+                    }
+                }
+                if (imgs.size() == 1) { toast("Coloque imagens (.png ou .jpg) na pasta themes do cartão (página Arquivos ou leitor)."); return; }
+                int i = Math.max(0, imgs.indexOf(Theme.fundoUsuario));
+                String novo = imgs.get((i + dir + imgs.size()) % imgs.size());
+                Theme.fundoUsuario = novo;
+                prefs.edit().putString("fundo_img", novo).commit();
+                applyTheme();
+                break;
+            }
             case OPT_PROTECAO:
                 prefs.edit().putInt("protecao", (protecaoIdx() + dir + PROTECAO_MIN.length) % PROTECAO_MIN.length).commit();
                 break;
@@ -1236,6 +1283,10 @@ public class Home extends Activity implements CarouselApi.Listener {
         boolean left = k == KeyEvent.KEYCODE_DPAD_LEFT, right = k == KeyEvent.KEYCODE_DPAD_RIGHT;
         boolean up = k == KeyEvent.KEYCODE_DPAD_UP, down = k == KeyEvent.KEYCODE_DPAD_DOWN;
         boolean l1 = k == KeyEvent.KEYCODE_BUTTON_L1, r1 = k == KeyEvent.KEYCODE_BUTTON_R1;
+        if (perfis.isOpen()) {
+            perfis.key(k, first);
+            return;
+        }
         if (infoOpen) {
             if ((isBack(k) || isOk(k) || isMenu(k)) && first) closePanel();
             return;
@@ -1390,8 +1441,18 @@ public class Home extends Activity implements CarouselApi.Listener {
 
     private View buildProtecao() {
         protecao = new FrameLayout(this);
-        protecao.setBackgroundColor(0xF2000000);
+        protecao.setBackgroundColor(0xFF000000);
         protecao.setVisibility(View.GONE);
+        // modo atracao: a cena de um jogo (a imagem de fundo que o menu baixa), escurecida, com nome e console
+        protecaoCena = new android.widget.ImageView(this);
+        protecaoCena.setScaleType(android.widget.ImageView.ScaleType.CENTER_CROP);
+        protecaoCena.setColorFilter(0x99000000, android.graphics.PorterDuff.Mode.SRC_ATOP);
+        protecao.addView(protecaoCena, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.FILL_PARENT, FrameLayout.LayoutParams.FILL_PARENT));
+        protecaoNome = text(11, Color.WHITE, true);
+        protecaoNome.setBackgroundColor(0x99000000);
+        protecaoNome.setPadding(dp(14), dp(6), dp(14), dp(6));
+        protecao.addView(protecaoNome, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.FILL_PARENT,
+                FrameLayout.LayoutParams.WRAP_CONTENT, Gravity.BOTTOM));
         protecaoCaixa = new android.widget.LinearLayout(this);
         protecaoCaixa.setOrientation(android.widget.LinearLayout.VERTICAL);
         protecaoCaixa.setGravity(Gravity.CENTER_HORIZONTAL);
@@ -1415,8 +1476,23 @@ public class Home extends Activity implements CarouselApi.Listener {
         boolean ligada = protecao.getVisibility() == View.VISIBLE;
         if (!ligada && (min == 0 || System.currentTimeMillis() - ultimaTecla < min * 60000L)) return;
         protecaoHora.setText(hora);
-        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) protecaoCaixa.getLayoutParams();
         java.util.Random r = new java.util.Random();
+        // uma cena sorteada entre os jogos que tem imagem de fundo
+        java.util.List<Catalog.Game> com = new java.util.ArrayList<Catalog.Game>();
+        for (Catalog.Game g : games) if (Catalog.backdrop(g.rom) != null) com.add(g);
+        if (!com.isEmpty()) {
+            Catalog.Game g = com.get(r.nextInt(com.size()));
+            try {
+                android.graphics.BitmapFactory.Options o = new android.graphics.BitmapFactory.Options();
+                o.inSampleSize = 2;   // a tela tem 800x480: metade basta e gasta menos memoria
+                android.graphics.Bitmap b = android.graphics.BitmapFactory.decodeFile(Catalog.backdrop(g.rom).getAbsolutePath(), o);
+                android.graphics.drawable.Drawable velho = protecaoCena.getDrawable();
+                protecaoCena.setImageBitmap(b);
+                if (velho instanceof android.graphics.drawable.BitmapDrawable) ((android.graphics.drawable.BitmapDrawable) velho).getBitmap().recycle();
+                protecaoNome.setText(g.title + "   •   " + g.sys.name);
+            } catch (Throwable ignored) { }
+        } else protecaoNome.setText("");
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) protecaoCaixa.getLayoutParams();
         int w = Math.max(1, protecao.getWidth() - protecaoCaixa.getWidth()), hh = Math.max(1, protecao.getHeight() - protecaoCaixa.getHeight());
         lp.leftMargin = r.nextInt(w);
         lp.topMargin = r.nextInt(hh);

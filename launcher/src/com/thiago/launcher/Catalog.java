@@ -23,6 +23,8 @@ final class Catalog {
     static boolean videoSmooth = true;
     /** Painel > JOGANDO > Mostrar FPS. */
     static boolean fpsShow = false;
+    /** Saves do perfil que esta jogando: "" (perfil 1, a pasta saves) ou "perfil-N" (dentro de saves). */
+    static String savesSub = "";
     /** O Half-Life nao e um arquivo: a pasta com os dados do jogo faz o papel de ROM. */
     private static final File XASH_DIR = new File(Environment.getExternalStorageDirectory(), "xash/valve");
 
@@ -198,6 +200,7 @@ final class Catalog {
             // como no ScrapCade OS: saves e BIOS ao lado de roms, nao dentro
             new File(Environment.getExternalStorageDirectory(), "saves").mkdirs();
             new File(Environment.getExternalStorageDirectory(), "bios").mkdirs();
+            new File(Environment.getExternalStorageDirectory(), "themes").mkdirs();   // imagens para o tema seu
         }
         File[] top = romsDir().listFiles();
         if (top != null) {
@@ -403,7 +406,8 @@ final class Catalog {
             if (!"psx".equals(e.core) && !new File("/data/local/cores/" + e.core + ".so").isFile())
                 return "Falta o emulador " + e.core + " neste aparelho";
             File sd = Environment.getExternalStorageDirectory();
-            File saves = new File(sd, "saves"), bios = new File(sd, "bios");   // mesmas pastas do ScrapCade OS
+            File saves = savesSub.length() == 0 ? new File(sd, "saves") : new File(new File(sd, "saves"), savesSub),
+                    bios = new File(sd, "bios");   // mesmas pastas do ScrapCade OS
             saves.mkdirs();
             bios.mkdirs();
             java.io.FileWriter w = new java.io.FileWriter(new File(romsDir(), ".retroarch.cfg"));

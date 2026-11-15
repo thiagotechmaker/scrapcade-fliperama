@@ -24,7 +24,7 @@ import java.util.Map;
  */
 final class Arquivos {
     private static final String USB = "Pen drive";
-    private static final String[] ROOTS = {"roms", "Jogos novos", "saves", "bios", "xash", USB};
+    private static final String[] ROOTS = {"roms", "Jogos novos", "saves", "bios", "themes", "xash", USB};
 
     /** Bytes ja copiados pela operacao em andamento, para a tela mostrar o progresso. */
     static volatile long progress;

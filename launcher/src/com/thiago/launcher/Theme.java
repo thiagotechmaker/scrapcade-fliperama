@@ -13,6 +13,27 @@ final class Theme {
     static final int CARBONO = 0, NEON = 1, ARCADE = 2, CLARO = 3, AURORA = 4, PIXEL = 5, PORTATIL = 6, OCEANO = 7;
     static final String[] NAMES = {"Carbono", "Neon", "Arcade", "Claro", "Aurora", "8 bits", "Portátil", "Oceano"};
     static int current = AURORA;
+    /** Imagem sua no fundo (pasta themes do cartao): no lugar do fundo do tema. null = o do tema. */
+    static String fundoUsuario = null;
+    private static android.graphics.Bitmap fundoBmp;
+    private static String fundoBmpDe;
+
+    private static boolean fundoProprio(Canvas c, Paint p, int w, int h) {
+        if (fundoUsuario == null) return false;
+        if (!fundoUsuario.equals(fundoBmpDe)) {
+            if (fundoBmp != null) fundoBmp.recycle();
+            android.graphics.BitmapFactory.Options o = new android.graphics.BitmapFactory.Options();
+            o.inSampleSize = 2;
+            fundoBmp = android.graphics.BitmapFactory.decodeFile(fundoUsuario, o);
+            fundoBmpDe = fundoUsuario;
+        }
+        if (fundoBmp == null) return false;
+        float esc = Math.max(w / (float) fundoBmp.getWidth(), h / (float) fundoBmp.getHeight());
+        float dw = fundoBmp.getWidth() * esc, dh = fundoBmp.getHeight() * esc;
+        p.setShader(null);
+        c.drawBitmap(fundoBmp, null, new RectF((w - dw) / 2, (h - dh) / 2, (w + dw) / 2, (h + dh) / 2), new Paint(Paint.FILTER_BITMAP_FLAG));
+        return true;
+    }
     /** Para ler o fundo do tema Aurora dos assets. */
     static android.content.Context ctx;
 
@@ -57,6 +78,7 @@ final class Theme {
     /** Fundo de tela inteira para a cor de um sistema. */
     static void background(Canvas c, Paint p, int w, int h, int col, float d) {
         p.setStyle(Paint.Style.FILL);
+        if (fundoProprio(c, p, w, h)) return;
         switch (current) {
             case AURORA:
                 aurora(c, p, w, h);
