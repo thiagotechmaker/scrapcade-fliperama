@@ -6,6 +6,15 @@ As versões 0.1.0-beta e 0.2.0-beta foram instaladas só no aparelho, sem Releas
 
 ## [Unreleased]
 
+## [0.3.2-beta] - 2026-11-15
+
+### Alterado
+- As pastas `roms`, `saves`, `bios`, `themes` e `Jogos novos` ficam fora da varredura de mídia do Android (`.nomedia`, criado pelo próprio menu): no boot e a cada cartão ou pen drive ele não lê mais milhares de ROMs e capas à toa.
+
+### Adicionado
+- `scripts/publicar.ps1`: publica uma versão conferindo o APK, o CHANGELOG e a tag antes.
+- Verificação automática no GitHub (o menu compila, scripts de arte, versão e CHANGELOG) e modelo para relatar problemas.
+
 ## [0.3.1-beta] - 2026-11-15
 
 ### Corrigido

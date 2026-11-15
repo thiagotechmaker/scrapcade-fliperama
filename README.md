@@ -3,7 +3,7 @@
 <p align="center"><img src="art_src/scrapcade/logo_tela_800.png" width="560" alt="ScrapCade OS"></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/vers%C3%A3o-v0.3.1--beta-orange" alt="versão v0.3.1-beta">
+  <img src="https://img.shields.io/badge/vers%C3%A3o-v0.3.2--beta-orange" alt="versão v0.3.2-beta">
   <img src="https://img.shields.io/badge/arquitetura-ARMv7%20(S5PV210)-informational" alt="arquitetura ARMv7">
   <img src="https://img.shields.io/badge/base-Android%202.3.3-lightgrey" alt="base Android 2.3.3">
   <img src="https://img.shields.io/badge/licen%C3%A7a-GPLv3-blue" alt="licença GPLv3">
@@ -94,6 +94,7 @@ Nenhum emulador ou jogo está neste repositório; os emuladores são instalados 
 │                    emuladores; scripts do N64, Half-Life e cabo USB
 ├── art_src/         scripts que geram a arte (logo, logos dos consoles), os índices de dados (CRC, nomes,
 │                    metadados) e o que grava a logo no kernel
+├── scripts/         publicar.ps1: publica uma versão (confere APK, CHANGELOG e tag)
 ├── capturas/        capturas da tela do aparelho
 ├── fotos/           fotos do aparelho
 └── INSTALACAO.md    tutorial para montar num aparelho
