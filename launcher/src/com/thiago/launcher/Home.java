@@ -164,6 +164,7 @@ public class Home extends Activity implements CarouselApi.Listener {
         root.addView(buildInfo(), new FrameLayout.LayoutParams(fp, fp));
         root.addView(buildProtecao(), new FrameLayout.LayoutParams(fp, fp));
         root.addView(perfis.view(), new FrameLayout.LayoutParams(fp, fp));
+        root.addView(buildAbrindo(), new FrameLayout.LayoutParams(fp, fp));
         splash(root);
         setContentView(root);
         carousel.setAnimMs(prefs.getBoolean("fast", false) ? 130 : 200);
@@ -192,13 +193,27 @@ public class Home extends Activity implements CarouselApi.Listener {
             return;     // sem a imagem, o menu abre direto
         }
         if (logo == null) return;
-        final ImageView v = new ImageView(this);
-        v.setBackgroundColor(0xFF0B0520);
-        v.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        v.setImageBitmap(logo);
+        final ImageView img = new ImageView(this);
+        img.setBackgroundColor(0xFF0B0520);
+        img.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        img.setImageBitmap(logo);
+        final FrameLayout v = new FrameLayout(this);     // logo + "CARREGANDO" embaixo, como no fim do boot
+        v.addView(img, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.FILL_PARENT, FrameLayout.LayoutParams.FILL_PARENT));
+        Carregando c = new Carregando(this);
+        c.setEscala(0.6f);
+        FrameLayout.LayoutParams cp = new FrameLayout.LayoutParams(FrameLayout.LayoutParams.FILL_PARENT, dp(56), Gravity.BOTTOM);
+        cp.bottomMargin = dp(36);
+        v.addView(c, cp);
         root.addView(v, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.FILL_PARENT, FrameLayout.LayoutParams.FILL_PARENT));
-        h.postDelayed(new Runnable() {
-            public void run() {
+        // o tempo conta a partir do primeiro desenho: abrir o menu leva uns 2,5 s, e antes disso a logo sumia sem
+        // ninguem ver
+        v.getViewTreeObserver().addOnPreDrawListener(new android.view.ViewTreeObserver.OnPreDrawListener() {
+            public boolean onPreDraw() {
+                v.getViewTreeObserver().removeOnPreDrawListener(this);
+                h.postDelayed(fade, 1500);
+                return true;
+            }
+            private final Runnable fade = new Runnable() { public void run() {
                 AlphaAnimation out = new AlphaAnimation(1f, 0f);
                 out.setDuration(450);
                 out.setAnimationListener(new android.view.animation.Animation.AnimationListener() {
@@ -209,15 +224,15 @@ public class Home extends Activity implements CarouselApi.Listener {
                         h.post(new Runnable() {       // tirar a View dentro do aviso da animacao derruba o desenho
                             public void run() {
                                 root.removeView(v);
-                                v.setImageDrawable(null);
+                                img.setImageDrawable(null);
                                 logo.recycle();
                             }
                         });
                     }
                 });
                 v.startAnimation(out);
-            }
-        }, 1300);
+            } };
+        });
     }
 
     /**
@@ -1218,7 +1233,37 @@ public class Home extends Activity implements CarouselApi.Listener {
         }
         // conta para o filtro "Mais jogados" e para os detalhes do jogo
         prefs.edit().putInt("plays|" + k, prefs.getInt("plays|" + k, 0) + 1).putLong("when|" + k, System.currentTimeMillis()).commit();
-        toast("Abrindo " + g.title + "...\nPara voltar ao menu: Select + Start");
+        mostrarAbrindo(g.title);
+    }
+
+    // ------------------------------------------------------------ "CARREGANDO" enquanto o emulador abre
+
+    private FrameLayout abrindo;
+    private Carregando abrindoAnim;
+
+    private View buildAbrindo() {
+        abrindo = new FrameLayout(this);
+        abrindo.setBackgroundColor(0xE6000000);
+        abrindo.setClickable(true);          // o toque nao chega no carrossel atras
+        abrindoAnim = new Carregando(this);
+        abrindo.addView(abrindoAnim, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.FILL_PARENT, FrameLayout.LayoutParams.FILL_PARENT));
+        abrindo.setVisibility(View.GONE);
+        return abrindo;
+    }
+
+    /** Cobre o menu com o "CARREGANDO" ate o emulador aparecer (onPause) ou, se ele nao vier, por 20 s. */
+    private void mostrarAbrindo(String jogo) {
+        abrindoAnim.setTexto(jogo, "Para voltar ao menu: Select + Start");
+        abrindo.setVisibility(View.VISIBLE);
+        h.removeCallbacks(fechaAbrindo);
+        h.postDelayed(fechaAbrindo, 20000);
+    }
+
+    private final Runnable fechaAbrindo = new Runnable() { public void run() { esconderAbrindo(); } };
+
+    private void esconderAbrindo() {
+        h.removeCallbacks(fechaAbrindo);
+        if (abrindo != null) abrindo.setVisibility(View.GONE);
     }
 
     private void loadApps() {
@@ -1267,6 +1312,11 @@ public class Home extends Activity implements CarouselApi.Listener {
         ultimaTecla = System.currentTimeMillis();
         if (protecao != null && protecao.getVisibility() == View.VISIBLE) {   // acorda: o botao nao faz mais nada
             if (e.getAction() == KeyEvent.ACTION_UP) protecao.setVisibility(View.GONE);
+            return true;
+        }
+        if (abrindo != null && abrindo.getVisibility() == View.VISIBLE) {
+            // o jogo esta abrindo: ignora os botoes (um segundo A abriria o jogo de novo); B cancela a espera
+            if (k == KeyEvent.KEYCODE_BACK && e.getAction() == KeyEvent.ACTION_UP) esconderAbrindo();
             return true;
         }
         if (!handles(k)) return super.dispatchKeyEvent(e);
@@ -1353,6 +1403,7 @@ public class Home extends Activity implements CarouselApi.Listener {
     protected void onResume() {
         super.onResume();
         paused = false;
+        esconderAbrindo();
         if (usingGl) ((GLSurfaceView) carousel.view()).onResume();
         if (Catalog.gameMode) {          // voltou do jogo: B e LT voltam a ser "voltar" e "menu"
             Catalog.gameMode = false;
@@ -1367,6 +1418,7 @@ public class Home extends Activity implements CarouselApi.Listener {
     protected void onPause() {
         super.onPause();
         paused = true;
+        esconderAbrindo();      // o emulador ja esta na frente: ao voltar, o menu aparece direto
         Capas.stop = true;
         h.removeCallbacks(ticker);     // nada de trabalho de fundo enquanto o jogo roda
         h.removeCallbacks(reloader);

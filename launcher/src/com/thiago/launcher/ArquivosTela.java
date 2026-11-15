@@ -46,6 +46,7 @@ final class ArquivosTela {
     private int sel;
     private Arquivos.Entry clip;        // o que foi escolhido para copiar ou mover
     private boolean clipMove, busy, changed, menuOpen;
+    private final FrameLayout ocupado;  // "CARREGANDO" sobre o painel durante copias e mudancas
     private int menuSel;
     private Runnable[] menuRuns;
 
@@ -94,6 +95,13 @@ final class ArquivosTela {
         hb.set("UD", "escolher", "A", "abrir", "Y", "ações", "X", "colar aqui", "B", "voltar");
         panel.addView(hb, new LinearLayout.LayoutParams(FILL, WRAP));
         root.addView(panel, new FrameLayout.LayoutParams(dp(480), dp(272), Gravity.CENTER));
+        ocupado = new FrameLayout(a);
+        ocupado.setBackgroundColor(0xD8101428);
+        Carregando anim = new Carregando(a);
+        anim.setEscala(0.7f);
+        ocupado.addView(anim, new FrameLayout.LayoutParams(FrameLayout.LayoutParams.FILL_PARENT, dp(110), Gravity.CENTER));
+        ocupado.setVisibility(View.GONE);
+        root.addView(ocupado, new FrameLayout.LayoutParams(dp(480), dp(180), Gravity.CENTER));   // a linha do progresso fica a mostra
 
         menuDim = new FrameLayout(a);
         menuDim.setBackgroundColor(0x99000000);
@@ -311,6 +319,7 @@ final class ArquivosTela {
     private void runOp(final String op, final String a, final String b) {
         busy = true;
         changed = true;
+        ocupado.setVisibility(View.VISIBLE);
         status.setText("Aguarde...");
         h.postDelayed(progress, 700);
         new Thread(new Runnable() {
@@ -328,6 +337,7 @@ final class ArquivosTela {
                 h.post(new Runnable() {
                     public void run() {
                         busy = false;
+                        ocupado.setVisibility(View.GONE);
                         h.removeCallbacks(progress);
                         int keep = sel;
                         load(cur, null);

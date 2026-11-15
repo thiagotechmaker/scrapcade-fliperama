@@ -245,7 +245,7 @@ final class Arquivos {
                 + "var cur='',clip=null;function $(i){return document.getElementById(i)}"
                 + "function tam(s){return s>1048576?(s/1048576).toFixed(1)+' MB':Math.ceil(s/1024)+' KB'}"
                 + "function req(m,u,body,ok){var x=new XMLHttpRequest;x.open(m,u);x.onload=function(){if(x.status==200)ok(x);else $('msg').textContent='Erro: '+x.statusText};x.send(body||null)}"
-                + "function op(o,a,b,n){$('msg').textContent='Aguarde...';var u='/fs/'+o+'?a='+encodeURIComponent(a)+(b!=null?'&b='+encodeURIComponent(b):'')"
+                + "function op(o,a,b,n){$('msg').innerHTML='<img src=/carregando.gif alt=Aguarde style=height:32px>';var u='/fs/'+o+'?a='+encodeURIComponent(a)+(b!=null?'&b='+encodeURIComponent(b):'')"
                 + "+(n!=null?'&n='+encodeURIComponent(n):'');req('POST',u,null,function(){$('msg').textContent='Feito.';abre(cur)})}"
                 + "function abre(p){cur=p;req('GET','/fs/lista?p='+encodeURIComponent(p),null,function(x){var l=JSON.parse(x.responseText),h='';"
                 + "var c='<a onclick=\"abre(\\'\\')\">Início</a>',acc='';if(p)p.split('/').forEach(function(s){acc+=(acc?'/':'')+s;"

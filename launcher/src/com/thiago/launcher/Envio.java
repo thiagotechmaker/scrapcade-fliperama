@@ -101,7 +101,9 @@ final class Envio implements Runnable {
         } else if (method.equals("POST") && path.startsWith("/apaga/")) {
             reply(out, delete(URLDecoder.decode(path.substring(7), "UTF-8")));
         } else if (method.equals("GET") && path.equals("/logo.jpg")) {
-            sendLogo(out);
+            sendAsset(out, "web/logo.jpg", "image/jpeg");
+        } else if (method.equals("GET") && path.equals("/carregando.gif")) {
+            sendAsset(out, "web/carregando.gif", "image/gif");
         } else if (method.equals("GET") && path.equals("/arquivos")) {
             send(out, "text/html; charset=utf-8", Arquivos.page().getBytes("UTF-8"));
         } else if (method.equals("GET") && path.startsWith("/fs/lista")) {
@@ -295,9 +297,9 @@ final class Envio implements Runnable {
                 + "<nav><a href=/" + (files ? "" : " class=on") + ">Jogos</a><a href=/arquivos" + (files ? " class=on" : "") + ">Arquivos</a></nav>";
     }
 
-    /** A logo do cabecalho, guardada dentro do app. */
-    private static void sendLogo(OutputStream out) throws IOException {
-        InputStream in = Theme.ctx.getAssets().open("web/logo.jpg");
+    /** Imagem guardada dentro do app (logo do cabecalho, animacao de carregando). */
+    private static void sendAsset(OutputStream out, String nome, String tipo) throws IOException {
+        InputStream in = Theme.ctx.getAssets().open(nome);
         java.io.ByteArrayOutputStream b = new java.io.ByteArrayOutputStream();
         try {
             byte[] buf = new byte[16384];
@@ -306,7 +308,7 @@ final class Envio implements Runnable {
         } finally {
             in.close();
         }
-        out.write(("HTTP/1.0 200 OK\r\nContent-Type: image/jpeg\r\nContent-Length: " + b.size()
+        out.write(("HTTP/1.0 200 OK\r\nContent-Type: " + tipo + "\r\nContent-Length: " + b.size()
                 + "\r\nCache-Control: max-age=86400\r\nConnection: close\r\n\r\n").getBytes("UTF-8"));
         out.write(b.toByteArray());
     }
@@ -324,10 +326,12 @@ final class Envio implements Runnable {
         }
         return head("ScrapCade", false)
                 + "<label id=d>Arraste os jogos para cá, ou toque para escolher<input id=f type=file multiple></label><div id=s></div>"
+                + "<img id=cg src=/carregando.gif alt=Carregando style='display:none;height:36px;margin:8px 0'>"
                 + "<div class=c>Cada jogo vai sozinho para o console certo, e a capa é baixada sozinha.</div>"
                 + "<h2>Jogos (" + games.size() + ")</h2><table>" + rows + "</table></main><script>"
                 + "var d=document.getElementById('d'),s=document.getElementById('s'),q=[],on=0;"
-                + "function go(){if(on||!q.length){if(!on&&s.dataset.fez){s.dataset.fez='';setTimeout(function(){location.reload()},4000)}return}on=1;"
+                + "var cg=document.getElementById('cg');"
+                + "function go(){if(on||!q.length){if(!on){cg.style.display='none';if(s.dataset.fez){s.dataset.fez='';setTimeout(function(){location.reload()},4000)}}return}on=1;cg.style.display='block';"
                 + "var f=q.shift(),l=document.createElement('div');s.appendChild(l);var x=new XMLHttpRequest;"
                 + "x.open('PUT','/envio/'+encodeURIComponent(f.name));"
                 + "x.upload.onprogress=function(e){l.textContent=f.name+': '+Math.round(e.loaded*100/f.size)+'%'};"
