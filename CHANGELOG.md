@@ -6,6 +6,17 @@ As versões 0.1.0-beta e 0.2.0-beta foram instaladas só no aparelho, sem Releas
 
 ## [Unreleased]
 
+## [0.4.0-beta] - 2026-11-15
+
+### Adicionado
+- Animação de boot nova: as letras da logo acendem uma a uma, um brilho atravessa a logo e uma barra de blocos corre embaixo até o sistema subir (`art_src/gera_animacoes.py` gera o `scrapcadeboot2.zip`).
+- "CARREGANDO..." animado (anel de blocos e pontinhos, nas letras de pixel da logo): ao abrir um jogo, com o nome dele e o atalho para voltar; embaixo da logo na abertura do menu; e durante cópias e mudanças no gerenciador de arquivos.
+- A página no navegador mostra a mesma animação durante os envios e as operações de arquivo.
+
+### Corrigido
+- A logo de abertura do menu sumia antes de aparecer (o menu leva uns 2,5 s para desenhar a primeira tela): agora o tempo conta a partir do primeiro desenho.
+- Ao abrir um jogo, apertar A de novo não abre o jogo duas vezes; B cancela a espera.
+
 ## [0.3.2-beta] - 2026-11-15
 
 ### Alterado

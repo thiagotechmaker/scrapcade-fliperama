@@ -3,7 +3,7 @@
 <p align="center"><img src="art_src/scrapcade/logo_tela_800.png" width="560" alt="ScrapCade OS"></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/vers%C3%A3o-v0.3.2--beta-orange" alt="versão v0.3.2-beta">
+  <img src="https://img.shields.io/badge/vers%C3%A3o-v0.4.0--beta-orange" alt="versão v0.4.0-beta">
   <img src="https://img.shields.io/badge/arquitetura-ARMv7%20(S5PV210)-informational" alt="arquitetura ARMv7">
   <img src="https://img.shields.io/badge/base-Android%202.3.3-lightgrey" alt="base Android 2.3.3">
   <img src="https://img.shields.io/badge/licen%C3%A7a-GPLv3-blue" alt="licença GPLv3">
@@ -17,6 +17,8 @@ O aparelho tem duas partes:
 
 - **ScrapCade, o menu.** É um app Android próprio (`com.thiago.launcher`), configurado como tela inicial. Dá para atualizar ou desinstalar sem mexer no sistema.
 - **Mudanças no sistema do aparelho:** driver do controle (`joyd`, em C, iniciado no boot); logo do ScrapCade OS gravada no bootloader, no kernel e na animação de boot; biblioteca de áudio muda (a original trava o aparelho); boot mais rápido (apps de sistema pré-compilados); ADB pela rede, para manutenção.
+
+<p align="center"><img src="art_src/scrapcade/previa_boot.gif" width="400" alt="Animação de boot: as letras acendem e a barra de blocos corre"></p>
 
 **Menu:** carrossel de capas no formato de cada caixa, com filtros por console, **Continuar jogando**, favoritos, mais jogados e os dados de cada jogo. Perfis com a tela "Quem vai jogar?", cada um com favoritos, preferências e saves próprios.
 
