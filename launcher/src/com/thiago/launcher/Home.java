@@ -1039,7 +1039,8 @@ public class Home extends Activity implements CarouselApi.Listener {
                 + memKb("MemTotal") / 1024 + " MB\n"
                 + "Cartão SD: " + sdFree / 1073741824L + " GB livres de " + sdTotal / 1073741824L + " GB\n"
                 + "Rede: " + ip() + "\n"
-                + "Sistema: T-OS 1.0 (Android " + android.os.Build.VERSION.RELEASE + ")  •  menu: ScrapCade  •  ligado há " + up + " min\n"
+                + "Sistema: Android " + android.os.Build.VERSION.RELEASE + " com boot próprio  •  menu: ScrapCade " + versao()
+                + "  •  ligado há " + up + " min\n"
                 + "Jogos: " + games.size() + ", na pasta roms do cartão SD\n"
                 + "Emuladores: " + emus + "\n\n"
                 + "Ícones: libretro/retroarch-assets (CC-BY 4.0)  •  Logos: es-theme-carbon\n"
@@ -1436,6 +1437,11 @@ public class Home extends Activity implements CarouselApi.Listener {
     }
 
     private void toast(String s) { Toast.makeText(this, s, Toast.LENGTH_LONG).show(); }
+
+    /** Versao do app (a do AndroidManifest, igual a tag do repositorio). */
+    private String versao() {
+        try { return getPackageManager().getPackageInfo(getPackageName(), 0).versionName; } catch (Exception e) { return ""; }
+    }
 
     private int protecaoIdx() { return Math.max(0, Math.min(PROTECAO_MIN.length - 1, prefs.getInt("protecao", 2))); }
 
