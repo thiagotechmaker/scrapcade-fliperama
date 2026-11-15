@@ -1,0 +1,13 @@
+# compilacao (gerados pelo build.ps1): vao so nas Releases do GitHub
+*.apk
+*.idsig
+*.dex
+classes/
+launcher/classes/
+joypad/joyd
+# chaves de assinatura e imagens do aparelho
+*.keystore
+*.img
+*.bin
+*.raw
+zImage*
