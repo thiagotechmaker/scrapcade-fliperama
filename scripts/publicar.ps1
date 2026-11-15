@@ -9,7 +9,9 @@
 # Use o APK assinado com a mesma chave das versoes anteriores, senao "adb install -r" recusa a atualizacao.
 param([string]$Repo = "thiagotechmaker/scrapcade-fliperama",
       [string]$Apk = (Join-Path (Split-Path $PSScriptRoot) "launcher\launcher.apk"))
-$ErrorActionPreference = "Stop"
+# "Continue": no PowerShell 5.1, com "Stop" qualquer texto que o git ou o gh escrevem no stderr vira erro.
+# Cada comando externo e conferido pelo $LASTEXITCODE.
+$ErrorActionPreference = "Continue"
 $raiz = Split-Path $PSScriptRoot
 function Para($m) { Write-Host "PARADO: $m"; exit 1 }
 function G { git -C $raiz -c user.name=T-Tech-Maker -c user.email=T-Tech-Maker@users.noreply.github.com @args; if ($LASTEXITCODE) { Para "git $args" } }
@@ -48,4 +50,6 @@ Copy-Item $Apk $tmp -Force
 $nt = New-TemporaryFile
 [IO.File]::WriteAllText($nt, $notas, (New-Object Text.UTF8Encoding $false))   # UTF-8 sem BOM
 gh release create "v$v" -R $Repo --verify-tag --prerelease --title "ScrapCade no iChroma v$v" --notes-file $nt $tmp
+$ok = $LASTEXITCODE
 Remove-Item $tmp, $nt
+if ($ok) { Para "gh release create falhou (a tag v$v ja foi enviada; rode de novo so o gh release create)" }
