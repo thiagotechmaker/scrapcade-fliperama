@@ -234,6 +234,7 @@ public class Home extends Activity implements CarouselApi.Listener {
 
     private void watchStorage() {
         Catalog.syncClock();
+        Catalog.semVarreduraDeMidia();
         android.content.IntentFilter media = new android.content.IntentFilter();
         media.addAction(Intent.ACTION_MEDIA_MOUNTED);
         media.addAction(Intent.ACTION_MEDIA_UNMOUNTED);

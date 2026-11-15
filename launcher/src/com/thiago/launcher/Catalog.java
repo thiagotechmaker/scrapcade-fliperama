@@ -177,6 +177,16 @@ final class Catalog {
 
     static File romsDir() { return new File(Environment.getExternalStorageDirectory(), "roms"); }
 
+    /** Tira as pastas de jogos da varredura de midia do Android (.nomedia): no boot e a cada cartao ou pen drive
+     *  ele leria milhares de ROMs e capas a toa, gastando processador e cartao. */
+    static void semVarreduraDeMidia() {
+        File sd = Environment.getExternalStorageDirectory();
+        for (String d : new String[] {"roms", "saves", "bios", "themes", "Jogos novos"}) {
+            File dir = new File(sd, d), nm = new File(dir, ".nomedia");
+            try { if (dir.isDirectory() && !nm.exists()) nm.createNewFile(); } catch (Exception e) { }
+        }
+    }
+
     /** Pede ao joyd (root) que execute um comando: o app nao e root. Ver check_cmd() no joyd.c */
     static void sendCmd(String cmd) {
         try {
