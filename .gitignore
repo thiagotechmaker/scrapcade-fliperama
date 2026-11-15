@@ -5,6 +5,8 @@
 classes/
 launcher/classes/
 joypad/joyd
+# animacao de boot (gerada pelo art_src/logo_scrapcade.py)
+launcher/scrapcadeboot.zip
 # chaves de assinatura e imagens do aparelho
 *.keystore
 *.img
