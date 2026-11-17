@@ -9,51 +9,31 @@
   <img src="https://img.shields.io/badge/licen%C3%A7a-GPLv3-blue" alt="licença GPLv3">
 </p>
 
-**Fliperama feito de um analisador de laboratório que ia para o lixo eletrônico.** O iChroma II (placa ARM S5PV210 de 1 núcleo a 1 GHz, 512 MB, tela de 800x480) roda o Android 2.3.3 do aparelho com bootloader, kernel e boot modificados, e liga direto no **ScrapCade**, um menu de jogos em Java. É o mesmo menu do [ScrapCade OS](https://github.com/thiagotechmaker/scrapcade.os) para PCs, cada um dentro do que a sua máquina aguenta.
+**Analisador de laboratório que ia para o lixo eletrônico, agora fliperama.** O iChroma II (ARM de 1 GHz, 512 MB, tela de 800x480) liga direto no **ScrapCade**, o mesmo menu do [ScrapCade OS](https://github.com/thiagotechmaker/scrapcade.os), em Java e pela GPU.
+
+<p align="center"><a href="https://github.com/thiagotechmaker/scrapcade-fliperama/releases/latest"><b>Baixar o app (APK)</b></a> · <a href="https://thiagotechmaker.github.io/scrapcade/#ichroma">Site</a> · <a href="https://github.com/thiagotechmaker/scrapcade-fliperama/discussions">Conversas</a></p>
 
 ## Sobre e capturas
 
-O aparelho tem duas partes:
-
-- **ScrapCade, o menu.** É um app Android próprio (`com.thiago.launcher`), configurado como tela inicial. Dá para atualizar ou desinstalar sem mexer no sistema.
-- **Mudanças no sistema do aparelho:** driver do controle (`joyd`, em C, iniciado no boot); logo do ScrapCade OS gravada no bootloader, no kernel e na animação de boot; biblioteca de áudio muda (a original trava o aparelho); boot mais rápido (apps de sistema pré-compilados); ADB pela rede, para manutenção.
-
-**Animações:** no boot, as letras da logo acendem uma a uma e uma barra de blocos corre até o sistema subir; depois, o "CARREGANDO" animado na abertura do menu e ao abrir cada jogo (com o atalho para voltar).
-
-<p align="center"><img src="art_src/scrapcade/previa_boot.gif" width="400" alt="Animação de boot: as letras acendem e a barra de blocos corre"></p>
-
-<p align="center"><img src="capturas/abertura.png" width="49%" alt="Abertura do menu com o CARREGANDO"> <img src="capturas/abrindo_jogo.png" width="49%" alt="CARREGANDO ao abrir um jogo"></p>
-
-**Menu:** carrossel de capas no formato de cada caixa, com filtros por console, **Continuar jogando**, favoritos, mais jogados e os dados de cada jogo. Perfis com a tela "Quem vai jogar?", cada um com favoritos, preferências e saves próprios.
+Duas partes: o **menu** (um app Android, `com.thiago.launcher`, que vira a tela inicial) e as **mudanças no sistema** do aparelho (driver de controle `joyd`, logo no boot, áudio que não trava, ADB pela rede). O passo a passo para montar está em [INSTALACAO.md](INSTALACAO.md).
 
 ![Menu principal](capturas/menu.png)
 
-**Painel Sistema** (botão SELECT), na mesma ordem do ScrapCade OS, em seções como o menu de ajustes de um console:
+<details><summary>Ver mais capturas e fotos</summary>
 
-<p align="center"><img src="capturas/painel_sistema.png" width="49%" alt="Painel Sistema, seção JOGOS"> <img src="capturas/painel_aparencia.png" width="49%" alt="Painel Sistema, seção APARÊNCIA com o tema 8 bits"></p>
-
-<p align="center"><img src="capturas/bios.png" width="49%" alt="BIOS dos consoles"> <img src="capturas/protecao_de_tela.png" width="49%" alt="Proteção de tela"></p>
-
-<details><summary>Ver todas as opções do painel</summary>
-
-- **JOGOS:** perfil, gerenciador de arquivos (pelo controle e pela página no navegador, porta 8080), ejetar pen drive, ordenar jogos (nome, ano, mais jogados, últimos), consoles vazios, capas de novo, limpar "Continuar jogando", BIOS dos consoles, cópia dos saves no pen drive.
-- **JOGANDO:** filtro de imagem (liso ou nenhum), FPS na tela.
-- **APARÊNCIA:** 8 temas (Carbono, Neon, Arcade, Claro, Aurora, 8 bits, Portátil, Oceano), imagem de fundo sua (pasta `themes`), tamanho do texto, animações, capas, fundo do jogo, proteção de tela com as cenas dos jogos (modo atração).
-- **TELA E ENERGIA:** clock da GPU, desenho do menu (GPU ou CPU), relógio 12/24 h.
-- **REDE:** enviar jogos do PC pelo navegador.
-- **SISTEMA:** aplicativos, configurações do Android, como jogar, informações, voltar tudo ao padrão, reiniciar.
+<p align="center"><img src="art_src/scrapcade/previa_boot.gif" width="400" alt="Animação de boot"></p>
+<p align="center"><img src="capturas/abrindo_jogo.png" width="49%" alt="CARREGANDO ao abrir um jogo"> <img src="capturas/painel_sistema.png" width="49%" alt="Painel Sistema"></p>
+<p align="center"><img src="capturas/painel_aparencia.png" width="49%" alt="Tema 8 bits"> <img src="capturas/arquivos.png" width="49%" alt="Gerenciador de arquivos"></p>
+<p align="center"><img src="fotos/aparelho_frente.jpg" width="49%" alt="iChroma II ligado"> <img src="fotos/aparelho_traseira_rede_usb.jpg" width="49%" alt="Traseira com cabo de rede e pen drive"></p>
 
 </details>
 
-**Colocar jogos:** pela página no navegador (`http://IP:8080`, o IP aparece no alto da tela), por um pen drive na porta USB de cima ou copiando para a pasta `Jogos novos` do cartão. O organizador leva cada jogo ao console certo e o menu baixa a capa e os dados. As pastas do cartão são as mesmas do ScrapCade OS: `roms/<console>`, `Jogos novos`, `saves`, `bios` e `themes`. O gerenciador de arquivos do painel copia, move e apaga pelo controle. Em qualquer jogo, SELECT + START volta ao menu; no arcade e no Neo Geo, SELECT põe ficha.
+<details><summary>Ver tudo o que o menu faz</summary>
 
-<p align="center"><img src="capturas/arquivos.png" width="49%" alt="Gerenciador de arquivos pelo controle"></p>
-
-![Aparelho ligado](fotos/aparelho_frente.jpg)
-
-<details><summary>Ver mais fotos do aparelho</summary>
-
-<p align="center"><img src="fotos/aparelho_menu_ao_vivo.jpg" width="49%" alt="Menu na tela do iChroma II"> <img src="fotos/aparelho_traseira_rede_usb.jpg" width="49%" alt="Traseira: cabo de rede e pen drive na porta USB"></p>
+- **Menu:** carrossel de capas no formato de cada caixa, filtros por console, "Continuar jogando", favoritos, perfis ("Quem vai jogar?"), 8 temas ou uma imagem sua, proteção de tela com as cenas dos jogos, animação de boot e CARREGANDO.
+- **Jogos:** página no navegador (`http://IP:8080`) para enviar jogos e gerenciar arquivos, pen drive, pasta `Jogos novos`; cada jogo vai para o console certo, com capa e dados. Mesmas pastas do ScrapCade OS (`roms`, `saves`, `bios`, `themes`).
+- **Painel Sistema** (SELECT): gerenciador de arquivos, BIOS dos consoles, cópia dos saves no pen drive, filtro de imagem, FPS, clock da GPU, relógio 12/24 h.
+- Em qualquer jogo, SELECT + START volta ao menu; no arcade e no Neo Geo, SELECT põe ficha.
 
 </details>
 
