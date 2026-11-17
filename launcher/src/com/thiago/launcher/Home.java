@@ -121,6 +121,17 @@ public class Home extends Activity implements CarouselApi.Listener {
         Theme.current = prefs.getInt("theme", Theme.AURORA);
         filter = prefs.getString("filter", "");
         envio = new Envio(new Envio.Host() {
+            public void instalarApp(final File apk) {
+                h.post(new Runnable() {
+                    public void run() {
+                        Intent i = new Intent(Intent.ACTION_VIEW);
+                        i.setDataAndType(android.net.Uri.fromFile(apk), "application/vnd.android.package-archive");
+                        i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        try { startActivity(i); } catch (Exception e) { toast("Não abriu o instalador do Android."); }
+                    }
+                });
+            }
+
             public void changed() {
                 h.removeCallbacks(reloader);
                 h.postDelayed(reloader, 500);
@@ -389,7 +400,17 @@ public class Home extends Activity implements CarouselApi.Listener {
 
     // ------------------------------------------------------------ favoritos, mais jogados e detalhes
 
-    private static final String F_ALL = "", F_FAV = "*fav", F_TOP = "*top", F_REC = "*rec";
+    private static final String F_ALL = "", F_FAV = "*fav", F_TOP = "*top", F_REC = "*rec", F_COL = "*col:";
+
+    /** Colecoes: prefs "col|<nome>|<jogo>"; os nomes saem das proprias chaves (como no ScrapCade OS). */
+    private List<String> colecoes() {
+        java.util.TreeSet<String> s = new java.util.TreeSet<String>();
+        for (String k : prefs.getAll().keySet())
+            if (k.startsWith("col|")) { int b = k.indexOf('|', 4); if (b > 4) s.add(k.substring(4, b)); }
+        return new ArrayList<String>(s);
+    }
+
+    private boolean naColecao(String c, Catalog.Game g) { return prefs.getBoolean("col|" + c + "|" + g.key(), false); }
     private List<String> filters = new ArrayList<String>();
 
     private boolean isFav(Catalog.Game g) { return prefs.getBoolean("fav|" + g.key(), false); }
@@ -411,6 +432,7 @@ public class Home extends Activity implements CarouselApi.Listener {
         if (rec) l.add(F_REC);   // logo depois de Todos: os ultimos jogos abertos
         if (fav) l.add(F_FAV);
         if (top) l.add(F_TOP);
+        for (String c : colecoes()) l.add(F_COL + c);
         for (Catalog.Sys s : systems) l.add(s.id);
         if (prefs.getBoolean("vazios", false))   // painel: mostrar tambem os consoles sem jogo
             for (Catalog.Sys s : Catalog.all()) if (!l.contains(s.id)) l.add(s.id);
@@ -421,6 +443,7 @@ public class Home extends Activity implements CarouselApi.Listener {
         if (F_REC.equals(id)) return "Continuar jogando";
         if (F_FAV.equals(id)) return "Favoritos";
         if (F_TOP.equals(id)) return "Mais jogados";
+        if (id.startsWith(F_COL)) return id.substring(F_COL.length());
         for (Catalog.Sys s : systems) if (s.id.equals(id)) return s.name;
         for (Catalog.Sys s : Catalog.all()) if (s.id.equals(id)) return s.name;
         return "Todos";
@@ -465,7 +488,36 @@ public class Home extends Activity implements CarouselApi.Listener {
         long when = prefs.getLong("when|" + g.key(), 0);
         if (when > 0) s.append("     Última vez: ").append(new SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()).format(new Date(when)));
         s.append("\nFavorito: ").append(isFav(g) ? "sim" : "não").append("  (o botão X marca e desmarca)");
+        List<String> cs = colecoes();
+        StringBuilder em = new StringBuilder();
+        for (String c : cs) if (naColecao(c, g)) em.append(em.length() > 0 ? ", " : "").append(c);
+        s.append("\nColeções: ").append(em.length() > 0 ? em.toString() : "nenhuma");
+        String alvo = colSel < cs.size() ? cs.get(colSel) : "Coleção " + (cs.size() + 1);
+        s.append("\n\nLB / RB: ‹ ").append(colSel < cs.size() ? alvo : "+ " + alvo + " (nova)").append(" ›     A: ")
+                .append(colSel < cs.size() && naColecao(alvo, g) ? "tirar dela" : "colocar nela");
+        detalhesDe = g;
         showPanel(g.title, s.toString());
+    }
+
+    private Catalog.Game detalhesDe;
+    private int colSel = 0;
+
+    /** Nos detalhes: LB/RB andam pelas colecoes (a ultima e uma nova), A poe ou tira o jogo. */
+    private void colecaoKey(int k) {
+        Catalog.Game g = detalhesDe;
+        List<String> cs = colecoes();
+        int n = cs.size() + 1;
+        if (k == KeyEvent.KEYCODE_BUTTON_L1) colSel = (colSel + n - 1) % n;
+        else if (k == KeyEvent.KEYCODE_BUTTON_R1) colSel = (colSel + 1) % n;
+        else {
+            String c = colSel < cs.size() ? cs.get(colSel) : "Coleção " + (cs.size() + 1);
+            String key = "col|" + c + "|" + g.key();
+            boolean tinha = prefs.getBoolean(key, false);
+            if (tinha) prefs.edit().remove(key).commit(); else prefs.edit().putBoolean(key, true).commit();
+            toast(tinha ? "Tirado de " + c : "Colocado em " + c);
+            applyFilter();
+        }
+        showDetails();
     }
 
     private View buildApps() {
@@ -509,7 +561,9 @@ public class Home extends Activity implements CarouselApi.Listener {
             OPT_GPU = 6, OPT_DRAW = 7, OPT_HELP = 8, OPT_INFO = 9, OPT_ANDROID = 10, OPT_EJECT = 11, OPT_REBOOT = 12,
             OPT_ORDENAR = 13, OPT_VAZIOS = 14, OPT_CAPAS = 15, OPT_LIMPAR = 16, OPT_FILTRO = 17, OPT_RELOGIO = 18,
             OPT_ENVIAR = 19, OPT_PADRAO = 20, OPT_FONTE = 21, OPT_FPS = 22, OPT_BIOS = 23, OPT_BACKUP = 24, OPT_PROTECAO = 25,
-            OPT_PERFIL = 26, OPT_FUNDO_IMG = 27, OPT_COUNT = 28;
+            OPT_PERFIL = 26, OPT_FUNDO_IMG = 27, OPT_FUSO = 28, OPT_COUNT = 29;
+    private static final String[] FUSO_NOMES = {"Brasília (UTC-3)", "Fernando de Noronha (UTC-2)", "Manaus e Cuiabá (UTC-4)", "Acre (UTC-5)", "Lisboa", "Nova York", "UTC"};
+    private static final String[] FUSO_TZ = {"America/Sao_Paulo", "America/Noronha", "America/Manaus", "America/Rio_Branco", "Europe/Lisbon", "America/New_York", "UTC"};
     private Perfis perfis;
     private static final int[] PROTECAO_MIN = {0, 5, 10, 30};
     private long ultimaTecla = System.currentTimeMillis();
@@ -527,7 +581,7 @@ public class Home extends Activity implements CarouselApi.Listener {
             {OPT_PERFIL, OPT_FILES, OPT_EJECT, OPT_ORDENAR, OPT_VAZIOS, OPT_CAPAS, OPT_LIMPAR, OPT_BIOS, OPT_BACKUP},
             {OPT_FILTRO, OPT_FPS},
             {OPT_THEME, OPT_FUNDO_IMG, OPT_FONTE, OPT_ANIM, OPT_COVERS, OPT_BG, OPT_PROTECAO},
-            {OPT_GPU, OPT_DRAW, OPT_RELOGIO},
+            {OPT_GPU, OPT_DRAW, OPT_RELOGIO, OPT_FUSO},
             {OPT_ENVIAR},
             {OPT_APPS, OPT_ANDROID, OPT_HELP, OPT_INFO, OPT_PADRAO, OPT_REBOOT},
     };
@@ -704,6 +758,7 @@ public class Home extends Activity implements CarouselApi.Listener {
         labels[OPT_LIMPAR] = "Limpar \"Continuar jogando\"";
         labels[OPT_FILTRO] = "Filtro de imagem:   ‹ " + (prefs.getBoolean("liso", true) ? "Liso" : "Nenhum") + " ›";
         labels[OPT_RELOGIO] = "Relógio:   ‹ " + (prefs.getBoolean("relogio12", false) ? "12 h (AM/PM)" : "24 h") + " ›";
+        labels[OPT_FUSO] = "Fuso horário:   ‹ " + FUSO_NOMES[Math.max(0, Math.min(FUSO_NOMES.length - 1, prefs.getInt("fuso", 0)))] + " ›";
         labels[OPT_ENVIAR] = "Enviar jogos do PC   (endereço ao lado)";
         labels[OPT_PADRAO] = "Voltar tudo ao padrão";
         labels[OPT_FONTE] = "Tamanho do texto:   ‹ " + FONTES[Math.max(0, Math.min(2, prefs.getInt("fonte", 0)))] + " ›";
@@ -920,6 +975,17 @@ public class Home extends Activity implements CarouselApi.Listener {
                 prefs.edit().putBoolean("relogio12", !prefs.getBoolean("relogio12", false)).commit();
                 tick();
                 break;
+            case OPT_FUSO: {
+                int f = (prefs.getInt("fuso", 0) + dir + FUSO_TZ.length) % FUSO_TZ.length;
+                prefs.edit().putInt("fuso", f).commit();
+                try {
+                    ((android.app.AlarmManager) getSystemService(ALARM_SERVICE)).setTimeZone(FUSO_TZ[f]);
+                } catch (Exception e) {
+                    toast("O Android não deixou trocar o fuso.");
+                }
+                tick();
+                break;
+            }
             case OPT_ENVIAR:
                 if (dir == 1) toast("No PC ou no celular, na mesma rede, abra http://" + ip() + ":" + Envio.PORT + " e arraste os jogos.");
                 return;
@@ -1149,6 +1215,8 @@ public class Home extends Activity implements CarouselApi.Listener {
                 public int compare(Catalog.Game a, Catalog.Game b) { return plays(b) - plays(a); }
             });
             while (v.size() > 20) v.remove(v.size() - 1);
+        } else if (filter.startsWith(F_COL)) {
+            for (Catalog.Game g : games) if (naColecao(filter.substring(F_COL.length()), g)) v.add(g);
         } else if (F_REC.equals(filter)) {   // do mais recente para o mais antigo, no maximo 12
             for (Catalog.Game g : games) if (when(g) > 0) v.add(g);
             Collections.sort(v, new Comparator<Catalog.Game>() {
@@ -1195,6 +1263,19 @@ public class Home extends Activity implements CarouselApi.Listener {
             view = v;
         }
         updateCaption();
+    }
+
+    /** Start no carrossel: vai para "Continuar jogando" (os ultimos jogos, voltando de onde parou); de novo, volta. */
+    private void trocaRapida() {
+        if (F_REC.equals(filter)) {
+            filter = prefs.getString("filtro_antes", F_ALL);
+        } else {
+            if (!filters.contains(F_REC)) { toast("Nenhum jogo para continuar ainda: abra um jogo primeiro."); return; }
+            prefs.edit().putString("filtro_antes", filter).commit();
+            filter = F_REC;
+        }
+        prefs.edit().putString("filter", filter).commit();
+        applyFilter();
     }
 
     private void changeFilter(int dir) {
@@ -1340,7 +1421,12 @@ public class Home extends Activity implements CarouselApi.Listener {
             return;
         }
         if (infoOpen) {
-            if ((isBack(k) || isOk(k) || isMenu(k)) && first) closePanel();
+            if (detalhesDe != null && first && (k == KeyEvent.KEYCODE_BUTTON_L1 || k == KeyEvent.KEYCODE_BUTTON_R1
+                    || k == KeyEvent.KEYCODE_BUTTON_A || k == KeyEvent.KEYCODE_ENTER || k == KeyEvent.KEYCODE_DPAD_CENTER)) {
+                colecaoKey(k);
+                return;
+            }
+            if ((isBack(k) || isOk(k) || isMenu(k)) && first) { closePanel(); detalhesDe = null; }
             return;
         }
         if (optOpen) {
@@ -1364,7 +1450,8 @@ public class Home extends Activity implements CarouselApi.Listener {
             else if (l1 && first) changeFilter(-1);
             else if (r1 && first) changeFilter(1);
             else if (k == KeyEvent.KEYCODE_BUTTON_X && first) toggleFav();
-            else if (k == KeyEvent.KEYCODE_BUTTON_Y && first) showDetails();
+            else if (k == KeyEvent.KEYCODE_BUTTON_Y && first) { colSel = 0; showDetails(); }
+            else if (k == KeyEvent.KEYCODE_BUTTON_START && first) trocaRapida();
             else if (isOk(k) && first) play(carousel.current());
         } else {
             int cols = 6;

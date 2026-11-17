@@ -25,6 +25,9 @@ final class Envio implements Runnable {
     interface Host {
         /** Chegou arquivo novo, ou um jogo foi apagado. Chamado fora da thread da tela. */
         void changed();
+
+        /** Chegou o app novo (mesmo pacote): abre o instalador do Android, que pede a confirmacao na tela. */
+        void instalarApp(File apk);
     }
 
     private final Host host;
@@ -96,6 +99,8 @@ final class Envio implements Runnable {
         String method = req[0], path = req[1];
         if (method.equals("PUT") && path.startsWith("/envio/")) {
             reply(out, receive(in, path.substring(7), length));
+        } else if (method.equals("PUT") && path.equals("/app")) {
+            reply(out, app(in, length));
         } else if (method.equals("PUT") && path.startsWith("/capa/")) {
             reply(out, cover(in, URLDecoder.decode(path.substring(6), "UTF-8"), length));
         } else if (method.equals("POST") && path.startsWith("/apaga/")) {
@@ -216,6 +221,32 @@ final class Envio implements Runnable {
         return "200 OK";
     }
 
+    /** App novo do fliperama: so aceita .apk do proprio ScrapCade (mesmo pacote); o Android confere a assinatura. */
+    private String app(InputStream in, long length) throws IOException {
+        if (length <= 0 || length > 64L * 1024 * 1024) return "400 Arquivo invalido";
+        File dir = android.os.Environment.getExternalStorageDirectory();
+        File tmp = new File(dir, "ScrapCade-app.apk" + PARTIAL), apk = new File(dir, "ScrapCade-app.apk");
+        OutputStream f = new FileOutputStream(tmp);
+        long left = length;
+        try {
+            byte[] b = new byte[65536];
+            while (left > 0) {
+                int n = in.read(b, 0, (int) Math.min(b.length, left));
+                if (n <= 0) break;
+                f.write(b, 0, n);
+                left -= n;
+            }
+        } finally {
+            f.close();
+        }
+        apk.delete();
+        if (left > 0 || !tmp.renameTo(apk)) { tmp.delete(); return "500 Envio incompleto"; }
+        android.content.pm.PackageInfo pi = Theme.ctx.getPackageManager().getPackageArchiveInfo(apk.getPath(), 0);
+        if (pi == null || !Theme.ctx.getPackageName().equals(pi.packageName)) { apk.delete(); return "400 Nao e o app do ScrapCade"; }
+        host.instalarApp(apk);
+        return "200 OK";
+    }
+
     /** Troca a capa de um jogo da lista: images/<jogo>.png, ao lado do jogo. O Android le a imagem pelo conteudo, seja PNG ou JPG. */
     private String cover(InputStream in, String key, long length) throws IOException {
         if (length <= 0 || length > 16L * 1024 * 1024) return "400 Imagem invalida";
@@ -328,7 +359,11 @@ final class Envio implements Runnable {
                 + "<label id=d>Arraste os jogos para cá, ou toque para escolher<input id=f type=file multiple></label><div id=s></div>"
                 + "<img id=cg src=/carregando.gif alt=Carregando style='display:none;height:36px;margin:8px 0'>"
                 + "<div class=c>Cada jogo vai sozinho para o console certo, e a capa é baixada sozinha.</div>"
-                + "<h2>Jogos (" + games.size() + ")</h2><table>" + rows + "</table></main><script>"
+                + "<h2>Jogos (" + games.size() + ")</h2><table>" + rows + "</table>"
+                + "<h2>Atualizar o app do fliperama</h2><div class=bar><button onclick=\"document.getElementById('apk').click()\">"
+                + "Escolher o .apk novo</button><input id=apk type=file accept='.apk'></div><div id=ap class=c>"
+                + "Baixe o .apk na página de versões do projeto. Depois de enviar, confirme a instalação na tela do fliperama.</div>"
+                + "</main><script>"
                 + "var d=document.getElementById('d'),s=document.getElementById('s'),q=[],on=0;"
                 + "var cg=document.getElementById('cg');"
                 + "function go(){if(on||!q.length){if(!on){cg.style.display='none';if(s.dataset.fez){s.dataset.fez='';setTimeout(function(){location.reload()},4000)}}return}on=1;cg.style.display='block';"
@@ -349,6 +384,10 @@ final class Envio implements Runnable {
                 + "var i=document.createElement('input');i.type='file';i.accept='image/png,image/jpeg';i.onchange=function(){"
                 + "var x=new XMLHttpRequest;x.open('PUT','/capa/'+encodeURIComponent(b.dataset.k));"
                 + "x.onload=function(){b.textContent=x.status==200?'capa trocada':'erro'};x.send(i.files[0])};i.click()}});"
+                + "document.getElementById('apk').onchange=function(e){var f=e.target.files[0],ap=document.getElementById('ap');if(!f)return;"
+                + "var x=new XMLHttpRequest;x.open('PUT','/app');x.upload.onprogress=function(e){ap.textContent=f.name+': '+Math.round(e.loaded*100/f.size)+'%'};"
+                + "x.onload=function(){ap.textContent=x.status==200?'Enviado: confirme a instalação na tela do fliperama.':'Erro: '+x.statusText};"
+                + "x.onerror=function(){ap.textContent='Erro de rede'};x.send(f)};"
                 + "</script></html>";
     }
 }

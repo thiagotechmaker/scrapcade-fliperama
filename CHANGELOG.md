@@ -6,6 +6,12 @@ As versões 0.1.0-beta e 0.2.0-beta foram instaladas só no aparelho, sem Releas
 
 ## [Unreleased]
 
+### Adicionado
+- Troca rápida: Start no carrossel abre "Continuar jogando" (os últimos jogos, voltando de onde parou); Start de novo volta ao filtro de antes.
+- Coleções: nos detalhes do jogo (Y), LB/RB escolhem a coleção e A coloca ou tira o jogo; cada coleção vira um filtro.
+- Fuso horário no painel (TELA E ENERGIA), Brasília de fábrica.
+- Atualizar o app pela página do navegador: envie o `.apk` novo e confirme a instalação na tela (só aceita o app do próprio ScrapCade).
+
 ## [0.4.0-beta] - 2026-11-15
 
 ### Adicionado
