@@ -49,7 +49,7 @@ $tmp = Join-Path $env:TEMP "scrapcade-ichroma-v$v.apk"
 Copy-Item $Apk $tmp -Force
 $nt = New-TemporaryFile
 [IO.File]::WriteAllText($nt, $notas, (New-Object Text.UTF8Encoding $false))   # UTF-8 sem BOM
-gh release create "v$v" -R $Repo --verify-tag --prerelease --title "ScrapCade no iChroma v$v" --notes-file $nt $tmp
+gh release create "v$v" -R $Repo --verify-tag --latest --title "ScrapCade no iChroma v$v" --notes-file $nt $tmp
 $ok = $LASTEXITCODE
 Remove-Item $tmp, $nt
 if ($ok) { Para "gh release create falhou (a tag v$v ja foi enviada; rode de novo so o gh release create)" }
