@@ -3,7 +3,7 @@
 <p align="center"><img src="art_src/scrapcade/logo_tela_800.png" width="560" alt="ScrapCade OS"></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/vers%C3%A3o-v0.4.0--beta-orange" alt="versão v0.4.0-beta">
+  <img src="https://img.shields.io/badge/vers%C3%A3o-v0.5.0--beta-orange" alt="versão v0.5.0-beta">
   <img src="https://img.shields.io/badge/arquitetura-ARMv7%20(S5PV210)-informational" alt="arquitetura ARMv7">
   <img src="https://img.shields.io/badge/base-Android%202.3.3-lightgrey" alt="base Android 2.3.3">
   <img src="https://img.shields.io/badge/licen%C3%A7a-GPLv3-blue" alt="licença GPLv3">

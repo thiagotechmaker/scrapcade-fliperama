@@ -127,7 +127,8 @@ public class Home extends Activity implements CarouselApi.Listener {
                         Intent i = new Intent(Intent.ACTION_VIEW);
                         i.setDataAndType(android.net.Uri.fromFile(apk), "application/vnd.android.package-archive");
                         i.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        try { startActivity(i); } catch (Exception e) { toast("Não abriu o instalador do Android."); }
+                        try { startActivity(i); } catch (Exception e) { toast("Não abriu o instalador do Android."); return; }
+                        voltarDepoisDeAtualizar();
                     }
                 });
             }
@@ -563,7 +564,9 @@ public class Home extends Activity implements CarouselApi.Listener {
             OPT_ENVIAR = 19, OPT_PADRAO = 20, OPT_FONTE = 21, OPT_FPS = 22, OPT_BIOS = 23, OPT_BACKUP = 24, OPT_PROTECAO = 25,
             OPT_PERFIL = 26, OPT_FUNDO_IMG = 27, OPT_FUSO = 28, OPT_COUNT = 29;
     private static final String[] FUSO_NOMES = {"Brasília (UTC-3)", "Fernando de Noronha (UTC-2)", "Manaus e Cuiabá (UTC-4)", "Acre (UTC-5)", "Lisboa", "Nova York", "UTC"};
-    private static final String[] FUSO_TZ = {"America/Sao_Paulo", "America/Noronha", "America/Manaus", "America/Rio_Branco", "Europe/Lisbon", "America/New_York", "UTC"};
+    // Brasília = America/Fortaleza: o tzdata do Android 2.3 (2011) ainda poe horario de verao em America/Sao_Paulo
+    // (abolido em 2019) e adiantava o relogio 1 h; Fortaleza e o mesmo UTC-3 sem horario de verao (e o de fabrica)
+    private static final String[] FUSO_TZ = {"America/Fortaleza","America/Noronha", "America/Manaus", "America/Rio_Branco", "Europe/Lisbon", "America/New_York", "UTC"};
     private Perfis perfis;
     private static final int[] PROTECAO_MIN = {0, 5, 10, 30};
     private long ultimaTecla = System.currentTimeMillis();
@@ -1000,7 +1003,8 @@ public class Home extends Activity implements CarouselApi.Listener {
                     padraoAt = 0;
                     SharedPreferences.Editor e = prefs.edit();
                     for (String k : prefs.getAll().keySet())
-                        if (!(k.startsWith("fav|") || k.startsWith("plays|") || k.startsWith("when|") || k.startsWith("last_"))) e.remove(k);
+                        if (!(k.startsWith("fav|") || k.startsWith("col|") || k.startsWith("plays|") || k.startsWith("when|")
+                                || k.startsWith("last_"))) e.remove(k);   // colecoes sao do usuario, como os favoritos
                     e.commit();
                     toast("Padrão restaurado. Reabrindo o menu...");
                     Intent again = getIntent();
@@ -1486,10 +1490,37 @@ public class Home extends Activity implements CarouselApi.Listener {
         if (Intent.ACTION_MAIN.equals(i.getAction()) && screen != SCR_MAIN) show(SCR_MAIN);
     }
 
+    /** App novo pela pagina: trocar o app fecha o menu, e o Android volta para o ultimo jogo aberto (a tarefa de baixo),
+     *  nao para o menu. Um alarme reabre o menu a cada 10 s ate ele ver que ja foi atualizado (ou 3 min passarem). */
+    private void voltarDepoisDeAtualizar() {
+        prefs.edit().putLong("app_pedido", System.currentTimeMillis()).commit();
+        ((android.app.AlarmManager) getSystemService(ALARM_SERVICE)).setRepeating(
+                android.app.AlarmManager.ELAPSED_REALTIME, android.os.SystemClock.elapsedRealtime() + 10000, 10000, reabrirMenu());
+    }
+
+    private android.app.PendingIntent reabrirMenu() {
+        Intent i = new Intent(this, Home.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        return android.app.PendingIntent.getActivity(this, 7, i, 0);
+    }
+
+    /** No onResume: o alarme acaba quando o app ja e o novo (instalado depois do pedido) ou o pedido ficou velho. */
+    private void conferirAtualizacao() {
+        long pedido = prefs.getLong("app_pedido", 0);
+        if (pedido == 0) return;
+        long instalado = 0;
+        try { instalado = getPackageManager().getPackageInfo(getPackageName(), 0).lastUpdateTime; } catch (Exception ignored) { }
+        if (instalado >= pedido || System.currentTimeMillis() - pedido > 180000) {
+            ((android.app.AlarmManager) getSystemService(ALARM_SERVICE)).cancel(reabrirMenu());
+            prefs.edit().remove("app_pedido").commit();
+            if (instalado >= pedido) toast("App do fliperama atualizado.");
+        }
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
         paused = false;
+        conferirAtualizacao();
         esconderAbrindo();
         if (usingGl) ((GLSurfaceView) carousel.view()).onResume();
         if (Catalog.gameMode) {          // voltou do jogo: B e LT voltam a ser "voltar" e "menu"
