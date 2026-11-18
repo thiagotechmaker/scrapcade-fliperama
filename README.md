@@ -11,6 +11,8 @@
 
 **Analisador de laboratório que ia para o lixo eletrônico, agora fliperama.** O iChroma II (ARM de 1 GHz, 512 MB, tela de 800x480) liga direto no **ScrapCade**, o mesmo menu do [ScrapCade OS](https://github.com/thiagotechmaker/scrapcade.os), em Java e pela GPU.
 
+<p align="center"><img src="fotos/aparelho_frente.jpg" width="640" alt="O iChroma II ligado no ScrapCade, com o carrossel de jogos na tela"></p>
+
 <p align="center"><a href="https://github.com/thiagotechmaker/scrapcade-fliperama/releases/latest"><b>Baixar o app (APK)</b></a> · <a href="https://thiagotechmaker.github.io/scrapcade/#ichroma">Site</a> · <a href="https://github.com/thiagotechmaker/scrapcade-fliperama/discussions">Conversas</a></p>
 
 ## Sobre e capturas
@@ -24,7 +26,7 @@ Duas partes: o **menu** (um app Android, `com.thiago.launcher`, que vira a tela 
 <p align="center"><img src="art_src/scrapcade/previa_boot.gif" width="400" alt="Animação de boot"></p>
 <p align="center"><img src="capturas/abrindo_jogo.png" width="49%" alt="CARREGANDO ao abrir um jogo"> <img src="capturas/painel_sistema.png" width="49%" alt="Painel Sistema"></p>
 <p align="center"><img src="capturas/painel_aparencia.png" width="49%" alt="Tema 8 bits"> <img src="capturas/arquivos.png" width="49%" alt="Gerenciador de arquivos"></p>
-<p align="center"><img src="fotos/aparelho_frente.jpg" width="49%" alt="iChroma II ligado"> <img src="fotos/aparelho_traseira_rede_usb.jpg" width="49%" alt="Traseira com cabo de rede e pen drive"></p>
+<p align="center"><img src="fotos/aparelho_traseira_rede_usb.jpg" width="49%" alt="Traseira com cabo de rede e pen drive"></p>
 
 </details>
 
