@@ -7,7 +7,7 @@ body:
     attributes:
       label: Versão do ScrapCade
       description: Aparece em Sistema > Informações ("menu: ScrapCade ...")
-      placeholder: 0.3.1-beta
+      placeholder: 0.5.0-beta
     validations:
       required: true
   - type: dropdown
