@@ -214,14 +214,24 @@ final class Organizer {
         File dir = inbox();
         dir.mkdirs();
         int done = 0;
+        long total = 0, feito = 0;
+        for (File f : todo) total += f.length();
+        int central = Central.inicia("Pen drive para o cartão", total);
         for (File f : todo) {
             p.at("Copiando do pen drive: " + (done + 1) + " de " + todo.size() + "\n" + f.getName());
+            Central.avanca(central, feito, (done + 1) + " de " + todo.size() + ": " + f.getName());
             File tmp = new File(dir, f.getName() + Envio.PARTIAL);
             try {
                 InputStream in = new java.io.FileInputStream(f);
                 OutputStream out = new FileOutputStream(tmp);
                 try {
-                    copy(in, out, Long.MAX_VALUE);
+                    byte[] b = new byte[65536];   // em blocos, para a central mostrar a barra andando nos CDs grandes
+                    int n;
+                    while ((n = in.read(b)) > 0) {
+                        out.write(b, 0, n);
+                        feito += n;
+                        Central.avanca(central, feito, null);
+                    }
                 } finally {
                     out.close();
                     in.close();
@@ -237,9 +247,11 @@ final class Organizer {
                 done++;
             } catch (IOException e) {
                 tmp.delete();     // pen drive saiu no meio ou cartao cheio: o que faltou vem na proxima vez
+                Central.termina(central, false, done + " de " + todo.size() + " copiados: confira o espaço no cartão e o pen drive");
                 return done + " de " + todo.size() + " copiados. Confira o espaço no cartão e o pen drive.";
             }
         }
+        Central.termina(central, true, (done == 1 ? "1 arquivo copiado" : done + " arquivos copiados") + ". Pode tirar o pen drive.");
         return (done == 1 ? "1 arquivo copiado" : done + " arquivos copiados") + " do pen drive. Pode tirar.";
     }
 

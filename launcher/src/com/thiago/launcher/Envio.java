@@ -165,6 +165,19 @@ final class Envio implements Runnable {
         android.os.StatFs fs = new android.os.StatFs(dir.getPath());
         if (length > (long) fs.getAvailableBlocks() * fs.getBlockSize()) return "507 Cartao cheio";
         File tmp = new File(dir, name + PARTIAL);
+        long left = recebe(in, tmp, name, length);
+        File to = new File(dir, name);
+        if (left > 0 || (to.exists() && !to.delete()) || !tmp.renameTo(to)) {
+            tmp.delete();
+            return "500 Envio incompleto";
+        }
+        host.changed();
+        return "200 OK";
+    }
+
+    /** Grava o corpo do envio em tmp e devolve quanto faltou chegar (0 = completo). Acima de 2 MB aparece na central. */
+    private static long recebe(InputStream in, File tmp, String name, long length) throws IOException {
+        int central = length > 2L * 1048576 ? Central.inicia("Pela página: " + name, length) : 0;
         OutputStream f = new FileOutputStream(tmp);
         long left = length;
         try {
@@ -174,17 +187,13 @@ final class Envio implements Runnable {
                 if (n <= 0) break;
                 f.write(b, 0, n);
                 left -= n;
+                if (central != 0) Central.avanca(central, length - left, null);
             }
         } finally {
             f.close();
+            if (central != 0) Central.termina(central, left == 0, null);
         }
-        File to = new File(dir, name);
-        if (left > 0 || (to.exists() && !to.delete()) || !tmp.renameTo(to)) {
-            tmp.delete();
-            return "500 Envio incompleto";
-        }
-        host.changed();
-        return "200 OK";
+        return left;
     }
 
     private static void reply(OutputStream out, String status) throws IOException {
@@ -200,19 +209,7 @@ final class Envio implements Runnable {
         android.os.StatFs fs = new android.os.StatFs(dir.getPath());
         if (length > (long) fs.getAvailableBlocks() * fs.getBlockSize()) return "507 Cartao cheio";
         File tmp = new File(dir, name + PARTIAL);
-        OutputStream f = new FileOutputStream(tmp);
-        long left = length;
-        try {
-            byte[] b = new byte[65536];
-            while (left > 0) {
-                int n = in.read(b, 0, (int) Math.min(b.length, left));
-                if (n <= 0) break;
-                f.write(b, 0, n);
-                left -= n;
-            }
-        } finally {
-            f.close();
-        }
+        long left = recebe(in, tmp, name, length);
         if (left > 0 || !tmp.renameTo(new File(dir, name))) {
             tmp.delete();
             return "500 Envio incompleto";

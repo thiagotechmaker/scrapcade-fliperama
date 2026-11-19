@@ -562,7 +562,7 @@ public class Home extends Activity implements CarouselApi.Listener {
             OPT_GPU = 6, OPT_DRAW = 7, OPT_HELP = 8, OPT_INFO = 9, OPT_ANDROID = 10, OPT_EJECT = 11, OPT_REBOOT = 12,
             OPT_ORDENAR = 13, OPT_VAZIOS = 14, OPT_CAPAS = 15, OPT_LIMPAR = 16, OPT_FILTRO = 17, OPT_RELOGIO = 18,
             OPT_ENVIAR = 19, OPT_PADRAO = 20, OPT_FONTE = 21, OPT_FPS = 22, OPT_BIOS = 23, OPT_BACKUP = 24, OPT_PROTECAO = 25,
-            OPT_PERFIL = 26, OPT_FUNDO_IMG = 27, OPT_FUSO = 28, OPT_COUNT = 29;
+            OPT_PERFIL = 26, OPT_FUNDO_IMG = 27, OPT_FUSO = 28, OPT_CENTRAL = 29, OPT_COUNT = 30;
     private static final String[] FUSO_NOMES = {"Brasília (UTC-3)", "Fernando de Noronha (UTC-2)", "Manaus e Cuiabá (UTC-4)", "Acre (UTC-5)", "Lisboa", "Nova York", "UTC"};
     // Brasília = America/Fortaleza: o tzdata do Android 2.3 (2011) ainda poe horario de verao em America/Sao_Paulo
     // (abolido em 2019) e adiantava o relogio 1 h; Fortaleza e o mesmo UTC-3 sem horario de verao (e o de fabrica)
@@ -581,7 +581,7 @@ public class Home extends Activity implements CarouselApi.Listener {
     /** Painel em secoes, como o menu de ajustes de um console de mesa: a mesma ordem do ScrapCade OS, no que a placa tem. */
     private static final String[] SECAO_NOMES = {"JOGOS", "JOGANDO", "APARÊNCIA", "TELA E ENERGIA", "REDE", "SISTEMA"};
     private static final int[][] SECOES = {
-            {OPT_PERFIL, OPT_FILES, OPT_EJECT, OPT_ORDENAR, OPT_VAZIOS, OPT_CAPAS, OPT_LIMPAR, OPT_BIOS, OPT_BACKUP},
+            {OPT_PERFIL, OPT_FILES, OPT_CENTRAL, OPT_EJECT, OPT_ORDENAR, OPT_VAZIOS, OPT_CAPAS, OPT_LIMPAR, OPT_BIOS, OPT_BACKUP},
             {OPT_FILTRO, OPT_FPS},
             {OPT_THEME, OPT_FUNDO_IMG, OPT_FONTE, OPT_ANIM, OPT_COVERS, OPT_BG, OPT_PROTECAO},
             {OPT_GPU, OPT_DRAW, OPT_RELOGIO, OPT_FUSO},
@@ -755,6 +755,7 @@ public class Home extends Activity implements CarouselApi.Listener {
         labels[OPT_BG] = "Fundo do jogo:   ‹ " + (prefs.getBoolean("backdrop", true) ? "Mostrar" : "Ocultar") + " ›";
         labels[OPT_APPS] = "Aplicativos";
         labels[OPT_FILES] = "Gerenciador de arquivos";
+        labels[OPT_CENTRAL] = "Downloads e cópias" + (Central.andando() ? "   (chegando)" : "");
         labels[OPT_ORDENAR] = "Ordenar jogos:   ‹ " + ORDENS[ordemAtual()] + " ›";
         labels[OPT_VAZIOS] = "Consoles vazios:   ‹ " + (prefs.getBoolean("vazios", false) ? "Mostrar" : "Esconder") + " ›";
         labels[OPT_CAPAS] = "Capas e dados dos jogos:   baixar de novo";
@@ -934,6 +935,14 @@ public class Home extends Activity implements CarouselApi.Listener {
             case OPT_PROTECAO:
                 prefs.edit().putInt("protecao", (protecaoIdx() + dir + PROTECAO_MIN.length) % PROTECAO_MIN.length).commit();
                 break;
+            case OPT_CENTRAL:
+                if (dir == 1) {
+                    setOptions(false);
+                    showPanel("Downloads e cópias", Central.texto());
+                    centralAberta = true;
+                    h.postDelayed(centralTick, 1000);
+                }
+                return;
             case OPT_BIOS:
                 if (dir == 1) {
                     setOptions(false);
@@ -1073,6 +1082,16 @@ public class Home extends Activity implements CarouselApi.Listener {
         return 0;
     }
 
+    /** Central aberta: a barra de cada copia anda sozinha (le de novo a cada segundo). */
+    private boolean centralAberta;
+    private final Runnable centralTick = new Runnable() {
+        public void run() {
+            if (!infoOpen || !centralAberta) return;
+            infoText.setText(Central.texto());
+            h.postDelayed(this, 1000);
+        }
+    };
+
     private void showPanel(String title, String s) {
         infoOpen = true;
         infoTitle.setText(title);
@@ -1082,6 +1101,7 @@ public class Home extends Activity implements CarouselApi.Listener {
 
     private void closePanel() {
         infoOpen = false;
+        centralAberta = false;
         infoDim.setVisibility(View.GONE);
     }
 

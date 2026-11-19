@@ -6,6 +6,11 @@ As versões 0.1.0-beta e 0.2.0-beta foram instaladas só no aparelho, sem Releas
 
 ## [Unreleased]
 
+## [0.6.0-beta] - 2026-11-19
+
+### Adicionado
+- Central de downloads (*Sistema > Downloads e cópias*), como a do ScrapCade OS: mostra a cópia do pen drive e os jogos enviados pela página do PC (acima de 2 MB), com uma barra e a porcentagem de cada um, e o que terminou ou não terminou. Enquanto algo chega, a opção mostra "(chegando)".
+
 ## [0.5.0-beta] - 2026-11-18
 
 ### Adicionado
