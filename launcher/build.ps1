@@ -22,9 +22,13 @@ $srcs = (Get-ChildItem "$dir\src" -Recurse -Filter *.java | ForEach-Object { $_.
 Chk 'javac'
 
 Write-Host '== 3) d8 -> classes.dex'
-$classes = (Get-ChildItem "$dir\classes" -Recurse -Filter *.class | ForEach-Object { $_.FullName })
-& "$bt\d8.bat" --min-api 10 --lib $aj --output "$dir" @classes
-Chk 'd8'
+# o d8 e um .bat: o cmd quebra caminho com espaco. Roda de dentro da pasta, com caminhos relativos.
+Push-Location $dir
+$classes = (Get-ChildItem "classes" -Recurse -Filter *.class | ForEach-Object { Resolve-Path -Relative $_.FullName })
+& "$bt\d8.bat" --min-api 10 --lib $aj --output . @classes
+$rc = $LASTEXITCODE
+Pop-Location
+if ($rc -ne 0) { Write-Host "FALHOU: d8 (exit $rc)"; exit 1 }
 
 Write-Host '== 4) aapt package (manifest)'
 & "$bt\aapt.exe" package -f -M "$dir\AndroidManifest.xml" -A "$dir\assets" -I $aj -F "$dir\app-unsigned.apk"
