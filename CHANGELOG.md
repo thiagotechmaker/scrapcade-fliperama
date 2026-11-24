@@ -6,6 +6,12 @@ As versões 0.1.0-beta e 0.2.0-beta foram instaladas só no aparelho, sem Releas
 
 ## [Unreleased]
 
+## [0.6.1-beta] - 2026-11-24
+
+### Corrigido
+- Jogo de Neo Geo com os nomes antigos do MAME dentro do zip (como o Samurai Shodown, com samsh_c1.rom) ia para o arcade, longe da BIOS, e não abria; agora vai para o Neo Geo.
+- A compilação do app (launcher/build.ps1) funciona em pasta com espaço no caminho.
+
 ## [0.6.0-beta] - 2026-11-19
 
 ### Adicionado

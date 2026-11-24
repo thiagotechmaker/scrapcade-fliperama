@@ -320,8 +320,10 @@ final class Organizer {
         boolean c1 = false, m1 = false;
         for (Enumeration<? extends ZipEntry> e = z.entries(); e.hasMoreElements(); ) {
             String n = e.nextElement().getName().toLowerCase(Locale.US);
-            if (n.endsWith(".c1") || n.contains("-c1.")) c1 = true;
-            if (n.endsWith(".m1") || n.contains("-m1.")) m1 = true;
+            // nomes novos (045-c1.c1, 045-m1.m1) e os antigos do MAME (samsh_c1.rom, samsh_m1.rom): o Samurai
+            // Shodown com os nomes antigos ia para o arcade, sem a BIOS do lado, e nao abria
+            if (n.endsWith(".c1") || n.contains("-c1.") || n.contains("_c1.")) c1 = true;
+            if (n.endsWith(".m1") || n.contains("-m1.") || n.contains("_m1.")) m1 = true;
         }
         return c1 && m1;
     }
