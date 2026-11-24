@@ -6,6 +6,12 @@ As versões 0.1.0-beta e 0.2.0-beta foram instaladas só no aparelho, sem Releas
 
 ## [Unreleased]
 
+## [0.7.0-beta] - 2026-11-24
+
+### Adicionado
+- Bips no menu pelo buzzer da placa, do mesmo jeito que o app de fábrica: ao andar (carrossel, painel, perfis e arquivos), ao abrir um jogo e quando um jogo não abre. O volume fica em *Sistema > Aparência > Bips do menu* (Desligados, Baixos, Médios, Altos; padrão Baixos). Não usa o chip de som, que reinicia o aparelho.
+- joypad/install_joyd.sh põe a serial do buzzer a 115200 no boot (o app não tem permissão para isso).
+
 ## [0.6.1-beta] - 2026-11-24
 
 ### Corrigido

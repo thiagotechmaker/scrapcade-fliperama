@@ -3,7 +3,7 @@
 <p align="center"><img src="art_src/scrapcade/logo_tela_800.png" width="560" alt="ScrapCade OS"></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/vers%C3%A3o-v0.6.0--beta-orange" alt="versão v0.6.0-beta">
+  <img src="https://img.shields.io/badge/vers%C3%A3o-v0.7.0--beta-orange" alt="versão v0.7.0-beta">
   <img src="https://img.shields.io/badge/arquitetura-ARMv7%20(S5PV210)-informational" alt="arquitetura ARMv7">
   <img src="https://img.shields.io/badge/base-Android%202.3.3-lightgrey" alt="base Android 2.3.3">
   <img src="https://img.shields.io/badge/licen%C3%A7a-GPLv3-blue" alt="licença GPLv3">
@@ -47,7 +47,7 @@ Duas partes: o **menu** (um app Android, `com.thiago.launcher`, que vira a tela 
 | Vídeo | ✅ PowerVR SGX540 (OpenGL ES 2, clock de 133 a 222 MHz pelo menu), tela de 800x480 |
 | Controle | ✅ USB Xbox 360 e genéricos, pelo `joyd` (o kernel não tem driver para eles) |
 | Rede | ✅ cabo (eth0) · ❌ Wi-Fi e Bluetooth |
-| Som | ❌ o codec de áudio da placa não responde (a biblioteca original reinicia o aparelho) |
+| Som | 🟡 bips do menu pelo buzzer da placa · ❌ o codec de áudio não responde (a biblioteca original reinicia o aparelho): jogos sem som |
 | Armazenamento | ✅ cartão SD e pen drive na porta USB de cima · ❌ cabo mini USB no PC (aparece como adaptador serial) |
 
 <details><summary>Ver os emuladores e a velocidade de cada console</summary>

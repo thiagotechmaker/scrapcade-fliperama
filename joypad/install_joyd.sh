@@ -36,6 +36,13 @@ if grep -q joyd /system/etc/marvell_bt.sh; then
 else
   echo "/system/xbin/joyd -d" >> /system/etc/marvell_bt.sh
 fi
+# bips do menu: o buzzer e o MSP430, que fala a 115200 pela serial0; a porta liga a 9600 e o app nao pode mudar
+if grep -q s3c2410_serial0 /system/etc/marvell_bt.sh; then
+  echo "porta do buzzer ja estava no marvell_bt.sh"
+else
+  echo "/bin/stty -F /dev/s3c2410_serial0 115200 raw -echo" >> /system/etc/marvell_bt.sh
+fi
+/bin/stty -F /dev/s3c2410_serial0 115200 raw -echo
 cat /system/etc/marvell_bt.sh
 sync
 

@@ -562,7 +562,7 @@ public class Home extends Activity implements CarouselApi.Listener {
             OPT_GPU = 6, OPT_DRAW = 7, OPT_HELP = 8, OPT_INFO = 9, OPT_ANDROID = 10, OPT_EJECT = 11, OPT_REBOOT = 12,
             OPT_ORDENAR = 13, OPT_VAZIOS = 14, OPT_CAPAS = 15, OPT_LIMPAR = 16, OPT_FILTRO = 17, OPT_RELOGIO = 18,
             OPT_ENVIAR = 19, OPT_PADRAO = 20, OPT_FONTE = 21, OPT_FPS = 22, OPT_BIOS = 23, OPT_BACKUP = 24, OPT_PROTECAO = 25,
-            OPT_PERFIL = 26, OPT_FUNDO_IMG = 27, OPT_FUSO = 28, OPT_CENTRAL = 29, OPT_COUNT = 30;
+            OPT_PERFIL = 26, OPT_FUNDO_IMG = 27, OPT_FUSO = 28, OPT_CENTRAL = 29, OPT_BIP = 30, OPT_COUNT = 31;
     private static final String[] FUSO_NOMES = {"Brasília (UTC-3)", "Fernando de Noronha (UTC-2)", "Manaus e Cuiabá (UTC-4)", "Acre (UTC-5)", "Lisboa", "Nova York", "UTC"};
     // Brasília = America/Fortaleza: o tzdata do Android 2.3 (2011) ainda poe horario de verao em America/Sao_Paulo
     // (abolido em 2019) e adiantava o relogio 1 h; Fortaleza e o mesmo UTC-3 sem horario de verao (e o de fabrica)
@@ -576,6 +576,10 @@ public class Home extends Activity implements CarouselApi.Listener {
     private android.widget.ImageView protecaoCena;
     private TextView protecaoNome;
     private static final String[] FONTES = {"Normal", "Grande", "Maior"};
+    /** Bips do menu pelo buzzer da placa (Bip.java): volume de cada nivel (0 desliga) e o nome no painel. */
+    private static final int[] BIP_VOL = {0, 2, 5, 10};
+    private static final String[] BIP_NOMES = {"Desligados", "Baixos", "Médios", "Altos"};
+    private int bipIdx() { return Math.max(0, Math.min(3, prefs.getInt("bip", 1))); }
     /** Tamanho do texto (painel): multiplica todas as letras do menu. */
     private float escala = 1f;
     /** Painel em secoes, como o menu de ajustes de um console de mesa: a mesma ordem do ScrapCade OS, no que a placa tem. */
@@ -583,7 +587,7 @@ public class Home extends Activity implements CarouselApi.Listener {
     private static final int[][] SECOES = {
             {OPT_PERFIL, OPT_FILES, OPT_CENTRAL, OPT_EJECT, OPT_ORDENAR, OPT_VAZIOS, OPT_CAPAS, OPT_LIMPAR, OPT_BIOS, OPT_BACKUP},
             {OPT_FILTRO, OPT_FPS},
-            {OPT_THEME, OPT_FUNDO_IMG, OPT_FONTE, OPT_ANIM, OPT_COVERS, OPT_BG, OPT_PROTECAO},
+            {OPT_THEME, OPT_FUNDO_IMG, OPT_FONTE, OPT_ANIM, OPT_BIP, OPT_COVERS, OPT_BG, OPT_PROTECAO},
             {OPT_GPU, OPT_DRAW, OPT_RELOGIO, OPT_FUSO},
             {OPT_ENVIAR},
             {OPT_APPS, OPT_ANDROID, OPT_HELP, OPT_INFO, OPT_PADRAO, OPT_REBOOT},
@@ -614,6 +618,7 @@ public class Home extends Activity implements CarouselApi.Listener {
         int i = 0;
         while (i < optOrder.length && optOrder[i] != optSel) i++;
         optSel = optOrder[(i + d + optOrder.length) % optOrder.length];
+        Bip.navegar();
     }
 
     private int ordemAtual() {
@@ -750,6 +755,7 @@ public class Home extends Activity implements CarouselApi.Listener {
     private void refreshOptions() {
         String[] labels = new String[OPT_COUNT];
         labels[OPT_THEME] = "Tema:   ‹ " + Theme.NAMES[Theme.current] + " ›";
+        labels[OPT_BIP] = "Bips do menu:   ‹ " + BIP_NOMES[bipIdx()] + " ›";
         labels[OPT_ANIM] = "Animações:   ‹ " + (prefs.getBoolean("fast", false) ? "Rápidas" : "Normais") + " ›";
         labels[OPT_COVERS] = "Capas dos jogos:   ‹ " + (prefs.getBoolean("covers", true) ? "Mostrar" : "Ocultar") + " ›";
         labels[OPT_BG] = "Fundo do jogo:   ‹ " + (prefs.getBoolean("backdrop", true) ? "Mostrar" : "Ocultar") + " ›";
@@ -932,6 +938,11 @@ public class Home extends Activity implements CarouselApi.Listener {
                 applyTheme();
                 break;
             }
+            case OPT_BIP:
+                prefs.edit().putInt("bip", (bipIdx() + dir + 4) % 4).commit();
+                Bip.volume = BIP_VOL[bipIdx()];
+                Bip.toca(Bip.NAVEGAR);   // para ouvir o volume novo
+                break;
             case OPT_PROTECAO:
                 prefs.edit().putInt("protecao", (protecaoIdx() + dir + PROTECAO_MIN.length) % PROTECAO_MIN.length).commit();
                 break;
@@ -1333,9 +1344,11 @@ public class Home extends Activity implements CarouselApi.Listener {
         prefs.edit().putString("last_game", k).putString("last_" + g.sys.id, k).putString("last_", k).commit();
         String err = Catalog.launch(this, g.sys, g.rom);
         if (err != null) {
+            Bip.erro();
             toast(err);
             return;
         }
+        Bip.abrir();
         // conta para o filtro "Mais jogados" e para os detalhes do jogo
         prefs.edit().putInt("plays|" + k, prefs.getInt("plays|" + k, 0) + 1).putLong("when|" + k, System.currentTimeMillis()).commit();
         mostrarAbrindo(g.title);
@@ -1440,7 +1453,10 @@ public class Home extends Activity implements CarouselApi.Listener {
         boolean left = k == KeyEvent.KEYCODE_DPAD_LEFT, right = k == KeyEvent.KEYCODE_DPAD_RIGHT;
         boolean up = k == KeyEvent.KEYCODE_DPAD_UP, down = k == KeyEvent.KEYCODE_DPAD_DOWN;
         boolean l1 = k == KeyEvent.KEYCODE_BUTTON_L1, r1 = k == KeyEvent.KEYCODE_BUTTON_R1;
-        if (perfis.isOpen()) {
+        boolean anda = left || right || up || down;
+        if (perfis.isOpen()) {          // "Quem vai jogar?": tambem bipa ao andar e ao entrar
+            if (anda) Bip.navegar();
+            else if (isOk(k) && first) Bip.abrir();
             perfis.key(k, first);
             return;
         }
@@ -1462,6 +1478,7 @@ public class Home extends Activity implements CarouselApi.Listener {
             return;
         }
         if (files.isOpen()) {
+            if (anda) Bip.navegar();
             files.key(k, first);
             return;
         }
@@ -1491,6 +1508,7 @@ public class Home extends Activity implements CarouselApi.Listener {
     private void step(int n) {
         carousel.move(n);
         updateCaption();
+        Bip.navegar();
     }
 
     @Override
@@ -1540,12 +1558,16 @@ public class Home extends Activity implements CarouselApi.Listener {
     protected void onResume() {
         super.onResume();
         paused = false;
+        Bip.volume = BIP_VOL[bipIdx()];
         conferirAtualizacao();
         esconderAbrindo();
         if (usingGl) ((GLSurfaceView) carousel.view()).onResume();
         if (Catalog.gameMode) {          // voltou do jogo: B e LT voltam a ser "voltar" e "menu"
             Catalog.gameMode = false;
-            if (Catalog.gameFailed(this)) toast("Esse jogo não abriu. O arquivo pode estar com defeito.");
+            if (Catalog.gameFailed(this)) {
+                Bip.erro();
+                toast("Esse jogo não abriu. O arquivo pode estar com defeito.");
+            }
             Catalog.sendCmd("game 0");
         }
         reload();
